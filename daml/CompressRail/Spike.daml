@@ -1,0 +1,72 @@
+-- Verification spike (throwaway).
+--
+-- Confirms, on the pinned SDK and Canton version, the property the whole design
+-- depends on: a coordinator party that SUBMITS a transaction creating a contract
+-- it is not a stakeholder of does not see that contract through its own ledger
+-- view, and an economic field lives on-ledger only as an opaque, application-
+-- encrypted blob. Replace this module with the real model once it lands.
+--
+-- Run: open in Daml Studio and read the Script results, or run `spike` with
+-- `daml script` against a sandbox.
+module CompressRail.Spike where
+
+import Daml.Script
+
+-- An economic payload is encrypted off-ledger by the owning participant; on-ledger
+-- it is opaque ciphertext. Cleartext never leaves the owner's own node.
+type Ciphertext = Text
+
+-- A participant's position, signed only by that participant. The coordinator is
+-- never a signatory or observer here.
+template Secret
+  with
+    owner : Party
+    cipher : Ciphertext
+  where
+    signatory owner
+
+-- The owner pre-authorizes the coordinator to TRIGGER creation of the Secret. The
+-- coordinator must observe this mandate to exercise it, but the mandate carries no
+-- cleartext -- only the owner-supplied ciphertext it passes through unchanged.
+template EmitMandate
+  with
+    owner : Party
+    coordinator : Party
+    cipher : Ciphertext
+  where
+    signatory owner
+    observer coordinator
+
+    -- Exercised (submitted) by the coordinator. The body runs with the owner's
+    -- authority and creates the Secret signed by the owner alone; the coordinator
+    -- is the actor of the exercise but not a stakeholder of the created Secret.
+    choice Emit : ContractId Secret
+      controller coordinator
+      do create Secret with owner; cipher
+
+spike : Script ()
+spike = do
+  owner <- allocateParty "Participant"
+  coordinator <- allocateParty "Operator"
+
+  mandate <- submit owner do
+    createCmd EmitMandate with
+      owner
+      coordinator
+      cipher = "ciphertext-stand-in"
+
+  -- The coordinator submits the transaction that creates the owner's Secret.
+  _ <- submit coordinator do
+    exerciseCmd mandate Emit
+
+  -- The owner sees its own Secret.
+  ownerView <- query @Secret owner
+  assertMsg "owner must see its own Secret" (length ownerView == 1)
+
+  -- The coordinator submitted the creating transaction yet is not a stakeholder,
+  -- so the Secret does not appear in its own ledger view. This is the property the
+  -- design depends on.
+  coordinatorView <- query @Secret coordinator
+  assertMsg "coordinator must not see the Secret" (length coordinatorView == 0)
+
+  pure ()

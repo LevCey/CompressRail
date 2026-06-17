@@ -1,0 +1,15 @@
+# Daml build output
+.daml/
+*.dar
+
+# Node / frontend (as they land)
+node_modules/
+.next/
+dist/
+
+# Secrets / local env
+.env
+.env.*
+
+# OS / editor
+.DS_Store

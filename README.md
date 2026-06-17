@@ -106,12 +106,15 @@ the interface.
 ## Repository layout
 
 ```
-daml/     Daml model: participant profiles, bilateral trades, cycle proposal and
-          participation, the atomic execute, and selective disclosure
-app/      Off-ledger client: payload encryption, commitments, per-node verification,
-          and Ledger API access
-ui/       Thin demo surface that renders each party's own view
-deploy/   Multi-node Canton DevNet topology and party allocation (config-driven)
+daml/      Daml model: participant profiles, bilateral trades, cycle proposal and
+           participation, the atomic execute, and selective disclosure
+app/       Off-ledger client: payload encryption, commitments, per-node verification,
+           and Ledger API access
+demo/      Demo application (demo.compressrail.com): party selection and the
+           per-party views, each rendered from that party's own ledger projection
+landing/   Landing site (compressrail.com)
+docs/      Public documentation (docs.compressrail.com)
+deploy/    Multi-node Canton DevNet topology and party allocation (config-driven)
 ```
 
 ## Getting started
@@ -135,7 +138,9 @@ land; see [Roadmap](#roadmap).
 
 ## Demo
 
-The demo is designed to make the privacy claim legible and falsifiable:
+You choose a party to act as — a participant, the operator, or a regulator — and get that party's own
+terminal view, rendered from its own ledger projection. The demo is designed to make the privacy claim
+legible and falsifiable:
 
 - Three views side by side, from the same ledger at the same instant: a participant (its book in
   cleartext), the operator (the same contracts, with every economic field shown as the real on-ledger
