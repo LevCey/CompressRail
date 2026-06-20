@@ -1,0 +1,92 @@
+-- The compression cycle: the operator-blind, atomic multilateral rebalance.
+--
+-- A single accumulating contract gathers every participant's authority. The
+-- operator opens the cycle (it is the only signatory at first, and carries no
+-- economic terms). Each invited participant commits to the cycle, adding itself to
+-- the signatory set and contributing its replacement-leg commitments plus a boolean
+-- that its locally-verified residual risk is within tolerance. Once every invited
+-- participant has committed, the operator executes: in one transaction it tears up
+-- the nominated trades and creates the replacement legs, each signed only by its two
+-- counterparties. The operator's authority alone can never do this; it only fires
+-- because, by then, every participant's authority is present on the cycle contract.
+module CompressRail.Cycle where
+
+import CompressRail.Types
+import CompressRail.Trade
+import DA.Foldable (forA_)
+
+data Participation = Participation
+  with
+    participant : Party
+    legs : [LegCommit]
+    withinTolerance : Bool
+  deriving (Eq, Show)
+
+-- Look up the leg a participant committed to face a given counterparty, failing
+-- (and so aborting the whole cycle) if it is missing.
+requireLeg : [Participation] -> Party -> Party -> Update LegCommit
+requireLeg parts p cp =
+  case find (\pa -> pa.participant == p) parts of
+    None -> fail ("no participation for " <> show p)
+    Some pa -> case find (\l -> l.counterparty == cp) pa.legs of
+      None -> fail ("no committed leg " <> show p <> " -> " <> show cp)
+      Some l -> pure l
+
+template CompressionCycle
+  with
+    cycleId : CycleId
+    operator : Party
+    committed : [Party]
+    toCommit : [Party]
+    teardown : [ContractId BilateralTrade]
+    topology : [(Party, Party)]
+    participations : [Participation]
+    deadline : Time
+  where
+    signatory committed
+    observer toCommit
+
+    -- A participant commits to the cycle: it contributes its replacement-leg
+    -- commitments and asserts its locally-verified residual risk is within
+    -- tolerance. A participant that declines simply never commits, which leaves
+    -- toCommit non-empty and makes Execute impossible.
+    choice Commit : ContractId CompressionCycle
+      with
+        participant : Party
+        legs : [LegCommit]
+        withinTolerance : Bool
+      controller participant
+      do
+        assertMsg "participant must be invited" (participant `elem` toCommit)
+        assertMsg "participant must be within tolerance to commit" withinTolerance
+        create this with
+          committed = participant :: committed
+          toCommit = filter (/= participant) toCommit
+          participations = (Participation with participant; legs; withinTolerance) :: participations
+
+    -- The operator commits the whole multilateral rebalance, all-or-nothing.
+    choice Execute : [ContractId BilateralTrade]
+      controller operator
+      do
+        assertMsg "all invited participants must have committed" (null toCommit)
+        now <- getTime
+        assertMsg "cycle is past its deadline" (now <= deadline)
+        assertMsg "every participation must be within tolerance"
+          (all (\pa -> pa.withinTolerance) participations)
+        -- tear up the nominated bilateral trades
+        forA_ teardown archive
+        -- create the replacement legs: for each pair, the two sides must have
+        -- committed to the same commitment (two-sided agreement) before the leg
+        -- is created, signed by its two counterparties only.
+        forA topology $ \(x, y) -> do
+          xLeg <- requireLeg participations x y
+          yLeg <- requireLeg participations y x
+          assertMsg "replacement leg commitments must agree on both sides"
+            (xLeg.commitment == yLeg.commitment)
+          create BilateralTrade with
+            cptyA = x
+            cptyB = y
+            tradeRef = cycleId <> "/" <> show x <> "-" <> show y
+            terms = xLeg.enc
+            commitment = xLeg.commitment
+            auditors = []

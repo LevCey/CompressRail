@@ -1,0 +1,95 @@
+-- End-to-end fixture for the CompressRail model.
+--
+-- A deterministic three-participant scenario with a known offsetting cycle (the
+-- stubbed optimizer: a fixture, not a solver). Economic fields are placeholder
+-- ciphertext; real encryption is off-ledger. The script proves the operator-blind
+-- atomic multilateral rebalance: the operator opens and executes the cycle yet is a
+-- stakeholder of no trade, while the counterparties end up holding the replacement
+-- legs and the torn-up ring is gone.
+module CompressRail.Test.Fixture where
+
+import Daml.Script
+import CompressRail.Types
+import CompressRail.Profile
+import CompressRail.Trade
+import CompressRail.Cycle
+import DA.Time (hours, addRelTime)
+import DA.Optional (fromSome)
+
+fixture : Script ()
+fixture = do
+  operator <- allocateParty "Operator"
+  a <- allocateParty "ParticipantA"
+  b <- allocateParty "ParticipantB"
+  c <- allocateParty "ParticipantC"
+
+  -- profiles: encrypted sensitivity commitments, no operator stakeholder
+  _ <- submit a $ createCmd ParticipantProfile with
+         participant = a; auditor = None; sensitivityCommitment = "ca"; encSensitivities = "enc-ca"
+  _ <- submit b $ createCmd ParticipantProfile with
+         participant = b; auditor = None; sensitivityCommitment = "cb"; encSensitivities = "enc-cb"
+  _ <- submit c $ createCmd ParticipantProfile with
+         participant = c; auditor = None; sensitivityCommitment = "cc"; encSensitivities = "enc-cc"
+
+  -- an offsetting ring of bilateral trades
+  tAB <- submit (actAs [a, b]) $ createCmd BilateralTrade with
+           cptyA = a; cptyB = b; tradeRef = "AB"; terms = "enc-ab"; commitment = "h-ab"; auditors = []
+  tBC <- submit (actAs [b, c]) $ createCmd BilateralTrade with
+           cptyA = b; cptyB = c; tradeRef = "BC"; terms = "enc-bc"; commitment = "h-bc"; auditors = []
+  tCA <- submit (actAs [c, a]) $ createCmd BilateralTrade with
+           cptyA = c; cptyB = a; tradeRef = "CA"; terms = "enc-ca"; commitment = "h-ca"; auditors = []
+
+  -- operator opens the cycle: tear up the ring, replace with one netted A-B leg.
+  -- the operator carries only references and commitments, never economic terms.
+  now <- getTime
+  cyc0 <- submit operator $ createCmd CompressionCycle with
+            cycleId = "cycle-1"
+            operator
+            committed = [operator]
+            toCommit = [a, b, c]
+            teardown = [tAB, tBC, tCA]
+            topology = [(a, b)]
+            participations = []
+            deadline = addRelTime now (hours 4)
+
+  -- each participant verifies locally (stubbed) and commits. A and B commit the
+  -- same leg commitment; C nets out with no replacement.
+  cyc1 <- submit a $ exerciseCmd cyc0 Commit with
+            participant = a
+            legs = [LegCommit with counterparty = b; commitment = "h-rab"; enc = "enc-rab"]
+            withinTolerance = True
+  cyc2 <- submit b $ exerciseCmd cyc1 Commit with
+            participant = b
+            legs = [LegCommit with counterparty = a; commitment = "h-rab"; enc = "enc-rab"]
+            withinTolerance = True
+  cyc3 <- submit c $ exerciseCmd cyc2 Commit with
+            participant = c
+            legs = []
+            withinTolerance = True
+
+  -- a stakeholder of each torn-up trade discloses it to the operator, so the
+  -- operator can use it as an input to Execute without ever becoming a stakeholder
+  -- (the disclosed payload is ciphertext, opaque to the operator). This is exactly
+  -- what each participant's off-ledger client does on the real network.
+  dAB <- fromSome <$> queryDisclosure a tAB
+  dBC <- fromSome <$> queryDisclosure b tBC
+  dCA <- fromSome <$> queryDisclosure c tCA
+
+  -- operator executes the atomic multilateral rebalance
+  newLegs <- submit (actAs operator <> discloseMany [dAB, dBC, dCA]) $ exerciseCmd cyc3 Execute
+  assertMsg "expected exactly one replacement leg" (length newLegs == 1)
+
+  -- operator-blindness: the operator opened and executed the cycle yet is a
+  -- stakeholder of no bilateral trade or replacement leg
+  opView <- query @BilateralTrade operator
+  assertMsg "operator must see no bilateral trade" (null opView)
+
+  -- the counterparties hold the replacement leg; the torn-up ring is gone
+  aView <- query @BilateralTrade a
+  assertMsg "A should see exactly its replacement leg" (length aView == 1)
+  bView <- query @BilateralTrade b
+  assertMsg "B should see exactly its replacement leg" (length bView == 1)
+  cView <- query @BilateralTrade c
+  assertMsg "C should hold no trade after netting out" (null cView)
+
+  pure ()

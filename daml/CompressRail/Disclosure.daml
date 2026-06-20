@@ -1,0 +1,24 @@
+-- Selective audit disclosure: a participant grants its home auditor a scoped,
+-- read-only view of its own decryption material.
+--
+-- Signed only by the participant; the auditor is the sole observer. Combined with
+-- the auditor being added as an observer on the participant's own profile and
+-- trades, this lets the auditor decrypt only that participant's payloads — nothing
+-- of any other participant, and with no transitive disclosure.
+module CompressRail.Disclosure where
+
+import CompressRail.Types
+
+template SelectiveAuditDisclosure
+  with
+    participant : Party
+    auditor : Party
+    encDecryptionScope : Ciphertext
+  where
+    signatory participant
+    observer auditor
+
+    -- The participant may revoke the grant.
+    choice Revoke : ()
+      controller participant
+      do pure ()

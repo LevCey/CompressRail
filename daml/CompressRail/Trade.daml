@@ -1,0 +1,45 @@
+-- A bilateral trade, signed only by its two counterparties.
+--
+-- Economic terms are on-ledger only as ciphertext + commitment; no operator party
+-- is ever a stakeholder. Auditors (scoped regulators) may be added as observers.
+module CompressRail.Trade where
+
+import CompressRail.Types
+
+template BilateralTrade
+  with
+    cptyA : Party
+    cptyB : Party
+    tradeRef : TradeRef
+    terms : Ciphertext
+    commitment : Commitment
+    auditors : [Party]
+  where
+    signatory cptyA, cptyB
+    observer auditors
+
+    -- Either counterparty may nominate this trade into a cycle by reference. The
+    -- nomination marker carries only the reference and commitment — never the terms.
+    nonconsuming choice NominateIntoCycle : ContractId CycleNomination
+      with
+        cycleId : CycleId
+        operator : Party
+        nominator : Party
+      controller nominator
+      do
+        assertMsg "nominator must be a counterparty" (nominator == cptyA || nominator == cptyB)
+        create CycleNomination with cycleId; operator; nominator; tradeRef; commitment
+
+-- An operator-visible marker that a trade has been nominated into a cycle. It
+-- references the trade by ref + commitment only, so the operator learns which
+-- trades are in play without seeing any economic terms.
+template CycleNomination
+  with
+    cycleId : CycleId
+    operator : Party
+    nominator : Party
+    tradeRef : TradeRef
+    commitment : Commitment
+  where
+    signatory nominator
+    observer operator

@@ -1,0 +1,25 @@
+-- A participant's profile: an encrypted commitment to its portfolio sensitivities.
+--
+-- Signed only by the participant. The participant may grant its home auditor a
+-- scoped, read-only observer view of its own profile.
+module CompressRail.Profile where
+
+import CompressRail.Types
+import DA.Optional (optionalToList)
+
+template ParticipantProfile
+  with
+    participant : Party
+    auditor : Optional Party
+    sensitivityCommitment : Commitment
+    encSensitivities : Ciphertext
+  where
+    signatory participant
+    observer optionalToList auditor
+
+    -- The participant grants (or rotates) its scoped auditor. The auditor becomes
+    -- an observer of this profile only; nothing of any other participant is exposed.
+    choice DiscloseToAuditor : ContractId ParticipantProfile
+      with newAuditor : Party
+      controller participant
+      do create this with auditor = Some newAuditor

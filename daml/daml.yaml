@@ -1,10 +1,9 @@
 # CompressRail Daml package.
 #
-# The public Canton Network DevNet runs Canton 3.5 / protocol version 35, built
-# with DPM. Local development here uses the installed SDK (3.4.10); the privacy and
-# authorization semantics this package relies on are stable across 3.4 and 3.5.
-# Bump to the 3.5.x line (via DPM) before deploying to DevNet.
-sdk-version: 3.4.10
+# Targets the public Canton Network DevNet (Canton 3.5 / protocol version 35).
+# Built and tested with DPM on the Daml 3.5.x SDK. Confirm the exact patch matches
+# DevNet before deploying.
+sdk-version: 3.5.1
 name: compressrail
 version: 0.0.1
 source: .

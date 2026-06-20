@@ -1,0 +1,22 @@
+-- Shared types for the CompressRail model.
+--
+-- Economic terms live on-ledger only as application-layer ciphertext plus a hash
+-- commitment over the canonical cleartext. Cleartext is never written to the ledger;
+-- it stays on the owning participant's own node.
+module CompressRail.Types where
+
+type Ciphertext = Text
+type Commitment = Text
+type TradeRef = Text
+type CycleId = Text
+
+-- A replacement leg a participant commits to in a cycle: the counterparty it will
+-- face, the integrity commitment over the agreed cleartext, and the ciphertext it
+-- supplies for the new leg. The two counterparties to a leg commit to the same
+-- commitment; the execute step checks they agree before creating the leg.
+data LegCommit = LegCommit
+  with
+    counterparty : Party
+    commitment : Commitment
+    enc : Ciphertext
+  deriving (Eq, Show)
