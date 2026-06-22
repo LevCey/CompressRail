@@ -1,0 +1,122 @@
+-- Failure-mode tests for the CompressRail compression cycle.
+--
+-- The happy-path fixture proves the operator-blind atomic multilateral rebalance.
+-- These tests prove the other half of the claim: the rebalance is all-or-nothing.
+-- Each test injects one fault into the same offsetting ring and asserts that the
+-- whole cycle aborts, the pre-execute state is untouched, and the operator remains a
+-- stakeholder of nothing. A half-settled cycle must be impossible.
+module CompressRail.Test.FailureModes where
+
+import Daml.Script
+import CompressRail.Types
+import CompressRail.Trade
+import CompressRail.Cycle
+import DA.Time (hours, addRelTime)
+import DA.Optional (fromSome)
+
+-- Shared setup: three participants, an offsetting ring of bilateral trades, an
+-- opened cycle, and the disclosures the operator needs to attempt Execute. This
+-- mirrors the happy-path fixture so each test differs only by the fault it injects.
+data Setup = Setup with
+  operator : Party
+  a : Party
+  b : Party
+  c : Party
+  cycle : ContractId CompressionCycle
+  disclosures : [Disclosure]
+
+setup : Script Setup
+setup = do
+  operator <- allocateParty "Operator"
+  a <- allocateParty "ParticipantA"
+  b <- allocateParty "ParticipantB"
+  c <- allocateParty "ParticipantC"
+
+  tAB <- submit (actAs [a, b]) $ createCmd BilateralTrade with
+           cptyA = a; cptyB = b; tradeRef = "AB"; terms = "enc-ab"; commitment = "h-ab"; auditors = []
+  tBC <- submit (actAs [b, c]) $ createCmd BilateralTrade with
+           cptyA = b; cptyB = c; tradeRef = "BC"; terms = "enc-bc"; commitment = "h-bc"; auditors = []
+  tCA <- submit (actAs [c, a]) $ createCmd BilateralTrade with
+           cptyA = c; cptyB = a; tradeRef = "CA"; terms = "enc-ca"; commitment = "h-ca"; auditors = []
+
+  now <- getTime
+  cycle <- submit operator $ createCmd CompressionCycle with
+            cycleId = "cycle-1"
+            operator
+            committed = [operator]
+            toCommit = [a, b, c]
+            teardown = [tAB, tBC, tCA]
+            topology = [(a, b)]
+            participations = []
+            deadline = addRelTime now (hours 4)
+
+  dAB <- fromSome <$> queryDisclosure a tAB
+  dBC <- fromSome <$> queryDisclosure b tBC
+  dCA <- fromSome <$> queryDisclosure c tCA
+
+  pure Setup with operator; a; b; c; cycle; disclosures = [dAB, dBC, dCA]
+
+-- A participant commits within tolerance.
+commitWithin : ContractId CompressionCycle -> Party -> [LegCommit] -> Script (ContractId CompressionCycle)
+commitWithin cyc p legs =
+  submit p $ exerciseCmd cyc Commit with participant = p; legs; withinTolerance = True
+
+-- After an aborted cycle, the ring is intact and the operator is blind: each
+-- participant still holds its two original trades and the operator is a stakeholder
+-- of none. This is the I-4 (atomic abort) and I-2 (operator-blindness) invariant.
+assertPreExecuteState : Setup -> Script ()
+assertPreExecuteState s = do
+  aView <- query @BilateralTrade s.a
+  assertMsg "A's two original trades must survive an aborted cycle" (length aView == 2)
+  bView <- query @BilateralTrade s.b
+  assertMsg "B's two original trades must survive an aborted cycle" (length bView == 2)
+  cView <- query @BilateralTrade s.c
+  assertMsg "C's two original trades must survive an aborted cycle" (length cView == 2)
+  opView <- query @BilateralTrade s.operator
+  assertMsg "operator must remain a stakeholder of no trade" (null opView)
+
+-- A cycle cannot execute while any invited participant has not committed. C never
+-- commits, so toCommit stays non-empty and Execute aborts.
+missingParticipantAborts : Script ()
+missingParticipantAborts = do
+  s <- setup
+  cyc1 <- commitWithin s.cycle s.a [LegCommit with counterparty = s.b; commitment = "h-rab"; enc = "enc-rab"]
+  cyc2 <- commitWithin cyc1 s.b [LegCommit with counterparty = s.a; commitment = "h-rab"; enc = "enc-rab"]
+  -- C does not commit
+  submitMustFail (actAs s.operator <> discloseMany s.disclosures) $ exerciseCmd cyc2 Execute
+  assertPreExecuteState s
+
+-- A participant cannot commit a false "within tolerance" attestation: the Commit
+-- choice rejects it, so a declined participant simply never joins the cycle.
+falseAttestationRejected : Script ()
+falseAttestationRejected = do
+  s <- setup
+  submitMustFail s.a $ exerciseCmd s.cycle Commit with
+    participant = s.a
+    legs = [LegCommit with counterparty = s.b; commitment = "h-rab"; enc = "enc-rab"]
+    withinTolerance = False
+  assertPreExecuteState s
+
+-- The two counterparties to a replacement leg must commit to the same commitment. If
+-- B commits a different commitment than A for the shared A-B leg, Execute aborts and
+-- nothing is torn up.
+mismatchedCommitmentsAbort : Script ()
+mismatchedCommitmentsAbort = do
+  s <- setup
+  cyc1 <- commitWithin s.cycle s.a [LegCommit with counterparty = s.b; commitment = "h-rab"; enc = "enc-rab"]
+  cyc2 <- commitWithin cyc1 s.b [LegCommit with counterparty = s.a; commitment = "h-mismatch"; enc = "enc-rab"]
+  cyc3 <- commitWithin cyc2 s.c []
+  submitMustFail (actAs s.operator <> discloseMany s.disclosures) $ exerciseCmd cyc3 Execute
+  assertPreExecuteState s
+
+-- A cycle cannot execute after its deadline. Every participant commits within
+-- tolerance, but time advances past the deadline before Execute, so it aborts.
+expiredDeadlineAborts : Script ()
+expiredDeadlineAborts = do
+  s <- setup
+  cyc1 <- commitWithin s.cycle s.a [LegCommit with counterparty = s.b; commitment = "h-rab"; enc = "enc-rab"]
+  cyc2 <- commitWithin cyc1 s.b [LegCommit with counterparty = s.a; commitment = "h-rab"; enc = "enc-rab"]
+  cyc3 <- commitWithin cyc2 s.c []
+  passTime (hours 5)
+  submitMustFail (actAs s.operator <> discloseMany s.disclosures) $ exerciseCmd cyc3 Execute
+  assertPreExecuteState s
