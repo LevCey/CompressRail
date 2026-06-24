@@ -1,0 +1,21 @@
+{
+  "name": "@compressrail/app",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Off-ledger client for CompressRail: payload encryption, commitments, and per-node verification.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "libsodium-wrappers": "0.8.4"
+  },
+  "devDependencies": {
+    "@types/node": "26.0.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  }
+}
