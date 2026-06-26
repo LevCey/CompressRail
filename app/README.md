@@ -25,9 +25,16 @@ crypto/        per-leg authenticated encryption, key wrapping, and commitments
   keys.ts        X25519 key-pair generation and config encode/decode
   leg.ts         sealLeg / openLeg
   index.ts       public API
+
+verify/        per-node residual-risk check (the stubbed solver)
+  types.ts       risk vector, position, assessment
+  risk.ts        net-risk arithmetic and the L1 magnitude
+  terms.ts       read risk sensitivities from a decrypted leg's cleartext
+  verify.ts      assessCompression -> the within-tolerance attestation
+  index.ts       public API
 ```
 
-`verify/` (per-node residual-risk check) and `ledger/` (Ledger API access) land next.
+`ledger/` (Ledger API access) lands next.
 
 ## Encryption scheme
 
@@ -74,6 +81,20 @@ receive replacement legs) and which trades are nominated; hiding that as well ne
 multi-party computation and is not part of this layer. This is not zero-knowledge,
 homomorphic encryption, or MPC, and it makes no claim about the legal enforceability
 of any trade.
+
+## Per-node verification
+
+`verify/` is the participant-side residual-risk check that gates a commitment. Each
+participant decrypts its own legs, reads their risk sensitivities, and computes how
+far the proposed compression would move its net risk — the L1 magnitude of the
+difference between its post-cycle and pre-cycle net risk. If that movement is within
+the participant's declared tolerance it attests `true`; otherwise it declines, and a
+decline makes the whole cycle fail to commit. Only the boolean attestation goes
+on-ledger; the magnitude and the tolerance stay on the node.
+
+This is a real, inspectable computation over node-local cleartext — never a
+hard-coded result — standing in for a production risk model (SIMM, SA-CCR, CRIF),
+which is out of scope. It runs only on the participant's side, never operator-side.
 
 ## Running
 
