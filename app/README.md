@@ -37,6 +37,12 @@ cycle/         participant-side cycle orchestration
   types.ts       held leg, participation submission, result
   participation.ts  prepareParticipation: verify locally, then build the submission
   index.ts       public API
+
+solver/        cycle-matching stand-in (deterministic, over fixture cleartext)
+  types.ts       trade, replacement, match result
+  risk.ts        risk-vector accumulation helpers
+  match.ts       netPositions + match: net-preserving compression
+  index.ts       public API
 ```
 
 `ledger/` (Ledger API access) lands next.
@@ -110,6 +116,17 @@ returns the on-ledger participation: the leg commitments, the ciphertext, and a
 single within-tolerance boolean. Both counterparties to a leg commit the same
 commitment, which is what the on-ledger execute checks; a participant beyond its
 tolerance declines instead, and the cycle cannot commit without it.
+
+## Cycle matching
+
+`solver/` computes which nominated trades a cycle tears up and which replacement legs
+restore each party's net risk. Per risk factor it pairs the net-long parties against
+the net-short ones, so the result preserves every party's net risk while collapsing
+the gross web of trades — a perfectly offsetting ring compresses to zero legs. It is
+a small, real, deterministic algorithm over fixture cleartext, standing in for the
+per-node multi-party computation a production system would run; it is never the
+operator, which only ever sees the resulting topology and commitments. Production
+risk models (SIMM, SA-CCR, CRIF) are out of scope.
 
 ## Running
 
