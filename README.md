@@ -169,4 +169,4 @@ This is a hackathon MVP focused on the privacy architecture, not a production co
 
 ## License
 
-To be added.
+Apache License 2.0 — see [LICENSE](LICENSE).

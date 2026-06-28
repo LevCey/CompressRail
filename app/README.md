@@ -32,6 +32,11 @@ verify/        per-node residual-risk check (the stubbed solver)
   terms.ts       read risk sensitivities from a decrypted leg's cleartext
   verify.ts      assessCompression -> the within-tolerance attestation
   index.ts       public API
+
+cycle/         participant-side cycle orchestration
+  types.ts       held leg, participation submission, result
+  participation.ts  prepareParticipation: verify locally, then build the submission
+  index.ts       public API
 ```
 
 `ledger/` (Ledger API access) lands next.
@@ -95,6 +100,16 @@ on-ledger; the magnitude and the tolerance stay on the node.
 This is a real, inspectable computation over node-local cleartext — never a
 hard-coded result — standing in for a production risk model (SIMM, SA-CCR, CRIF),
 which is out of scope. It runs only on the participant's side, never operator-side.
+
+## Cycle participation
+
+`cycle/` composes the encryption and the per-node check into what a participant
+actually submits. `prepareParticipation` opens — and so verifies — each replacement
+leg the participant would hold, runs the residual-risk check, and only if it passes
+returns the on-ledger participation: the leg commitments, the ciphertext, and a
+single within-tolerance boolean. Both counterparties to a leg commit the same
+commitment, which is what the on-ledger execute checks; a participant beyond its
+tolerance declines instead, and the cycle cannot commit without it.
 
 ## Running
 

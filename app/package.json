@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Off-ledger client for CompressRail: payload encryption, commitments, and per-node verification.",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
