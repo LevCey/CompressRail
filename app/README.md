@@ -43,9 +43,15 @@ solver/        cycle-matching stand-in (deterministic, over fixture cleartext)
   risk.ts        risk-vector accumulation helpers
   match.ts       netPositions + match: net-preserving compression
   index.ts       public API
-```
 
-`ledger/` (Ledger API access) lands next.
+ledger/        JSON Ledger API v2 client (per-party, config-driven)
+  types.ts       request/response shapes
+  transport.ts   injectable HTTP transport (fetch-based default)
+  requests.ts    command + active-contracts request builders
+  parse.ts       response parsing and errors
+  client.ts      LedgerClient: submit, exercise, per-party reads
+  index.ts       public API
+```
 
 ## Encryption scheme
 
@@ -127,6 +133,16 @@ a small, real, deterministic algorithm over fixture cleartext, standing in for t
 per-node multi-party computation a production system would run; it is never the
 operator, which only ever sees the resulting topology and commitments. Production
 risk models (SIMM, SA-CCR, CRIF) are out of scope.
+
+## Ledger access
+
+`ledger/` is a small JSON Ledger API v2 client. It submits commands (create,
+exercise) and reads active contracts scoped to a single party, so visibility comes
+from Canton's projection rather than from filtering in the client. The base URL and
+the per-party access token are configuration; the transport is injectable, and the
+client holds no key that can decrypt a participant's payload — it only ever moves
+ciphertext and commitments. Request and response shapes follow the published JSON
+Ledger API reference.
 
 ## Running
 

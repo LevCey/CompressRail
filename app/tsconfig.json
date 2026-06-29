@@ -14,5 +14,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["crypto/**/*.ts", "verify/**/*.ts", "cycle/**/*.ts", "solver/**/*.ts"]
+  "include": ["crypto/**/*.ts", "verify/**/*.ts", "cycle/**/*.ts", "solver/**/*.ts", "ledger/**/*.ts"]
 }
