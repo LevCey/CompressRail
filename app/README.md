@@ -51,6 +51,13 @@ ledger/        JSON Ledger API v2 client (per-party, config-driven)
   parse.ts       response parsing and errors
   client.ts      LedgerClient: submit, exercise, per-party reads
   index.ts       public API
+
+model/         typed bindings to the on-ledger Daml model
+  types.ts       record shapes (trades, cycle, participation, disclosure)
+  templates.ts   template ids + choice names
+  encode.ts      create/choice argument encoders (Daml-LF JSON)
+  decode.ts      active-contract decoders
+  index.ts       public API
 ```
 
 ## Encryption scheme
@@ -143,6 +150,15 @@ the per-party access token are configuration; the transport is injectable, and t
 client holds no key that can decrypt a participant's payload — it only ever moves
 ciphertext and commitments. Request and response shapes follow the published JSON
 Ledger API reference.
+
+## Model bindings
+
+`model/` maps the on-ledger Daml model to the JSON the ledger client sends and reads:
+template ids in package-name form, encoders that turn typed values into Daml-LF JSON
+(records as objects, a (Party, Party) pair as `{_1, _2}`, an Optional as the value or
+null), and decoders that read contracts back from the active-contract set. Only
+opaque ciphertext and commitments cross this boundary; no cleartext economic term is
+ever encoded onto the ledger.
 
 ## Running
 
