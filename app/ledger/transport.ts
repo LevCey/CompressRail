@@ -16,6 +16,8 @@ export interface Transport {
 // URL and token come from configuration; nothing is hard-coded.
 export function fetchTransport(baseUrl: string): Transport {
   const base = baseUrl.replace(/\/+$/, "");
+  const authHeader = (token: string): Record<string, string> =>
+    token.length > 0 ? { Authorization: `Bearer ${token}` } : {};
   const parse = async (res: Response): Promise<LedgerResponse> => {
     const text = await res.text();
     let body: unknown = null;
@@ -35,7 +37,7 @@ export function fetchTransport(baseUrl: string): Transport {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
-          Authorization: `Bearer ${token}`,
+          ...authHeader(token),
         },
         body: JSON.stringify(body),
       });
@@ -44,7 +46,7 @@ export function fetchTransport(baseUrl: string): Transport {
     async get(path, token) {
       const res = await fetch(base + path, {
         method: "GET",
-        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        headers: { Accept: "application/json", ...authHeader(token) },
       });
       return parse(res);
     },

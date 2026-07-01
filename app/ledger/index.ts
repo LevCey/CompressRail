@@ -8,6 +8,7 @@ export type {
   ExerciseResult,
   CreatedEvent,
   LedgerEnd,
+  PartyDetails,
   ActiveContractsRequest,
   ActiveContractsFilter,
   CumulativeFilter,
@@ -22,5 +23,5 @@ export {
   buildActiveContractsRequest,
   type SubmitOptions,
 } from "./requests";
-export { LedgerError, parseActiveContracts, parseExerciseResult, parseLedgerEnd, assertOk } from "./parse";
+export { LedgerError, parseActiveContracts, parseExerciseResult, parseLedgerEnd, parseAllocatedParty, parseParties, assertOk } from "./parse";
 export { LedgerClient, type LedgerClientConfig, type ReadOptions } from "./client";

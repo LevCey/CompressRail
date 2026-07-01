@@ -55,6 +55,11 @@ export interface LedgerEnd {
   readonly offset: number;
 }
 
+export interface PartyDetails {
+  readonly party: string;
+  readonly isLocal: boolean;
+}
+
 export interface IdentifierFilter {
   readonly identifierFilter:
     | { readonly TemplateFilter: { readonly value: { readonly templateId: TemplateId; readonly includeCreatedEventBlob: boolean } } }

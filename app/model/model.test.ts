@@ -125,10 +125,11 @@ describe("integration with the ledger client", () => {
 
     await client.create("A::1220", TEMPLATES.BilateralTrade, createBilateralTrade(trade));
 
-    expect(calls[0]!.body).toEqual({
+    expect(calls[0]!.body).toMatchObject({
       actAs: ["A::1220"],
       commands: [{ CreateCommand: { templateId: TEMPLATES.BilateralTrade, createArguments: createBilateralTrade(trade) } }],
     });
+    expect(typeof (calls[0]!.body as { commandId: unknown }).commandId).toBe("string");
   });
 
   it("submits a typed Commit exercise through the client", async () => {
@@ -137,7 +138,7 @@ describe("integration with the ledger client", () => {
 
     await client.exercise("A::1220", TEMPLATES.CompressionCycle, "00cyc", CHOICES.Commit, commitArg("A::1220", [], true));
 
-    expect(calls[0]!.body).toEqual({
+    expect(calls[0]!.body).toMatchObject({
       actAs: ["A::1220"],
       commands: [
         {
@@ -150,5 +151,6 @@ describe("integration with the ledger client", () => {
         },
       ],
     });
+    expect(typeof (calls[0]!.body as { commandId: unknown }).commandId).toBe("string");
   });
 });

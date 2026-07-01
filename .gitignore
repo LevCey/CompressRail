@@ -2,6 +2,9 @@
 .daml/
 *.dar
 
+# Canton runtime logs
+log/
+
 # Node / frontend (as they land)
 node_modules/
 .next/

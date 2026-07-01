@@ -53,7 +53,7 @@ describe("LedgerClient.create / exercise", () => {
 
     await client.exercise("Op::1220", "#compressrail:CompressRail.Cycle:CompressionCycle", "00cyc", "Execute", {});
 
-    expect(calls[0]!.body).toEqual({
+    expect(calls[0]!.body).toMatchObject({
       actAs: ["Op::1220"],
       commands: [
         {
@@ -66,6 +66,7 @@ describe("LedgerClient.create / exercise", () => {
         },
       ],
     });
+    expect(typeof (calls[0]!.body as { commandId: unknown }).commandId).toBe("string");
   });
 });
 
@@ -174,5 +175,29 @@ describe("LedgerClient errors", () => {
       expect((e as LedgerError).code).toBe("INVALID_ARGUMENT");
       expect((e as LedgerError).status).toBe(400);
     }
+  });
+});
+
+describe("LedgerClient party management", () => {
+  it("allocates a party and returns its id", async () => {
+    const { transport, calls } = mock({
+      "/v2/parties": { status: 200, body: { partyDetails: { party: "Alice::1220", isLocal: true } } },
+    });
+    const client = new LedgerClient({ transport, token: "jwt" });
+    expect(await client.allocateParty("Alice")).toBe("Alice::1220");
+    expect(calls[0]).toMatchObject({ method: "POST", path: "/v2/parties" });
+    expect(calls[0]!.body).toEqual({ partyIdHint: "Alice", identityProviderId: "" });
+  });
+
+  it("lists known parties", async () => {
+    const { transport } = mock({
+      "/v2/parties": {
+        status: 200,
+        body: { partyDetails: [{ party: "Alice::1220", isLocal: true }, { party: "Op::1220", isLocal: true }], nextPageToken: "" },
+      },
+    });
+    const client = new LedgerClient({ transport, token: "jwt" });
+    const parties = await client.listParties();
+    expect(parties.map((p) => p.party)).toEqual(["Alice::1220", "Op::1220"]);
   });
 });

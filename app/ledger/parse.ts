@@ -1,5 +1,5 @@
 // Response parsing and error handling for the JSON Ledger API.
-import type { CreatedEvent, ExerciseResult, LedgerEnd } from "./types";
+import type { CreatedEvent, ExerciseResult, LedgerEnd, PartyDetails } from "./types";
 import type { LedgerResponse } from "./transport";
 
 export class LedgerError extends Error {
@@ -53,6 +53,31 @@ export function parseLedgerEnd(body: unknown): LedgerEnd {
     throw new LedgerError("unexpected ledger-end response (missing offset)");
   }
   return { offset: Number(r["offset"]) };
+}
+
+function toPartyDetails(r: Record<string, unknown>): PartyDetails {
+  return { party: asString(r["party"]), isLocal: r["isLocal"] === true };
+}
+
+export function parseAllocatedParty(body: unknown): PartyDetails {
+  const details = asRecord(asRecord(body)?.["partyDetails"]);
+  if (!details || typeof details["party"] !== "string") {
+    throw new LedgerError("unexpected allocate-party response (missing partyDetails.party)");
+  }
+  return toPartyDetails(details);
+}
+
+export function parseParties(body: unknown): PartyDetails[] {
+  const arr = asRecord(body)?.["partyDetails"];
+  if (!Array.isArray(arr)) {
+    throw new LedgerError("unexpected parties response (expected partyDetails array)");
+  }
+  const out: PartyDetails[] = [];
+  for (const entry of arr) {
+    const r = asRecord(entry);
+    if (r) out.push(toPartyDetails(r));
+  }
+  return out;
 }
 
 function toCreatedEvent(r: Record<string, unknown>): CreatedEvent {

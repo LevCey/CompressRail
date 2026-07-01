@@ -12,8 +12,8 @@ import {
   exerciseCommand,
   type SubmitOptions,
 } from "./requests";
-import { assertOk, parseActiveContracts, parseExerciseResult, parseLedgerEnd } from "./parse";
-import type { Command, CreatedEvent, ExerciseResult, TemplateId } from "./types";
+import { assertOk, parseActiveContracts, parseAllocatedParty, parseExerciseResult, parseLedgerEnd, parseParties } from "./parse";
+import type { Command, CreatedEvent, ExerciseResult, PartyDetails, TemplateId } from "./types";
 import type { Transport } from "./transport";
 
 export interface LedgerClientConfig {
@@ -30,18 +30,19 @@ export interface ReadOptions {
 export class LedgerClient {
   private readonly transport: Transport;
   private readonly token: string;
-  private readonly userId: string | undefined;
+  private readonly userId: string;
 
   constructor(config: LedgerClientConfig) {
     this.transport = config.transport;
     this.token = config.token;
-    this.userId = config.userId;
+    this.userId = config.userId ?? "compressrail";
   }
 
   async submitAndWait(actAs: string[], commands: Command[], opts: SubmitOptions = {}): Promise<ExerciseResult> {
+    const userId = opts.userId ?? this.userId;
     const request = buildSubmitAndWait(actAs, commands, {
-      ...opts,
-      ...(opts.userId === undefined && this.userId !== undefined ? { userId: this.userId } : {}),
+      commandId: opts.commandId ?? globalThis.crypto.randomUUID(),
+      ...(userId !== undefined ? { userId } : {}),
     });
     const res = await this.transport.post("/v2/commands/submit-and-wait", request, this.token);
     assertOk(res);
@@ -72,6 +73,18 @@ export class LedgerClient {
     const res = await this.transport.get("/v2/state/ledger-end", this.token);
     assertOk(res);
     return parseLedgerEnd(res.body).offset;
+  }
+
+  async allocateParty(partyIdHint: string): Promise<string> {
+    const res = await this.transport.post("/v2/parties", { partyIdHint, identityProviderId: "" }, this.token);
+    assertOk(res);
+    return parseAllocatedParty(res.body).party;
+  }
+
+  async listParties(): Promise<PartyDetails[]> {
+    const res = await this.transport.get("/v2/parties", this.token);
+    assertOk(res);
+    return parseParties(res.body);
   }
 
   // Active contracts in a single party's projection. Defaults to the current ledger
