@@ -3,6 +3,7 @@ import type {
   ActiveContractsRequest,
   Command,
   CreateCommand,
+  DisclosedContract,
   ExerciseCommand,
   SubmitAndWaitRequest,
   TemplateId,
@@ -24,6 +25,8 @@ export function exerciseCommand(
 export interface SubmitOptions {
   readonly commandId?: string;
   readonly userId?: string;
+  readonly readAs?: string[];
+  readonly disclosedContracts?: DisclosedContract[];
 }
 
 export function buildSubmitAndWait(actAs: string[], commands: Command[], opts: SubmitOptions = {}): SubmitAndWaitRequest {
@@ -32,6 +35,10 @@ export function buildSubmitAndWait(actAs: string[], commands: Command[], opts: S
     commands,
     ...(opts.userId !== undefined ? { userId: opts.userId } : {}),
     ...(opts.commandId !== undefined ? { commandId: opts.commandId } : {}),
+    ...(opts.readAs !== undefined && opts.readAs.length > 0 ? { readAs: opts.readAs } : {}),
+    ...(opts.disclosedContracts !== undefined && opts.disclosedContracts.length > 0
+      ? { disclosedContracts: opts.disclosedContracts }
+      : {}),
   };
 }
 

@@ -26,12 +26,20 @@ export interface ExerciseCommand {
 
 export type Command = CreateCommand | ExerciseCommand;
 
+export interface DisclosedContract {
+  readonly contractId: string;
+  readonly templateId: TemplateId;
+  readonly createdEventBlob: string;
+  readonly synchronizerId: string;
+}
+
 export interface SubmitAndWaitRequest {
   readonly actAs: string[];
   readonly commands: Command[];
   readonly commandId?: string;
   readonly userId?: string;
   readonly readAs?: string[];
+  readonly disclosedContracts?: DisclosedContract[];
 }
 
 export interface ExerciseResult {
@@ -48,6 +56,8 @@ export interface CreatedEvent {
   readonly witnessParties: string[];
   readonly offset: number;
   readonly createdAt: string;
+  readonly createdEventBlob: string;
+  readonly synchronizerId: string;
   readonly packageName?: string;
 }
 

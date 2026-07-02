@@ -80,7 +80,7 @@ export function parseParties(body: unknown): PartyDetails[] {
   return out;
 }
 
-function toCreatedEvent(r: Record<string, unknown>): CreatedEvent {
+function toCreatedEvent(r: Record<string, unknown>, synchronizerId: string): CreatedEvent {
   return {
     contractId: asString(r["contractId"]),
     templateId: asString(r["templateId"]),
@@ -90,12 +90,15 @@ function toCreatedEvent(r: Record<string, unknown>): CreatedEvent {
     witnessParties: asStringArray(r["witnessParties"]),
     offset: Number(r["offset"] ?? 0),
     createdAt: asString(r["createdAt"]),
+    createdEventBlob: asString(r["createdEventBlob"]),
+    synchronizerId,
     ...(typeof r["packageName"] === "string" ? { packageName: r["packageName"] } : {}),
   };
 }
 
 // The active-contracts HTTP response is an array of entries; each active contract is
-// under contractEntry.JsActiveContract.createdEvent. Non-active entries are skipped.
+// under contractEntry.JsActiveContract.createdEvent, with synchronizerId as a sibling
+// of createdEvent. Non-active entries are skipped.
 export function parseActiveContracts(body: unknown): CreatedEvent[] {
   if (!Array.isArray(body)) {
     throw new LedgerError("unexpected active-contracts response (expected an array)");
@@ -105,7 +108,7 @@ export function parseActiveContracts(body: unknown): CreatedEvent[] {
     const contractEntry = asRecord(asRecord(entry)?.["contractEntry"]);
     const active = asRecord(contractEntry?.["JsActiveContract"]);
     const created = asRecord(active?.["createdEvent"]);
-    if (created) out.push(toCreatedEvent(created));
+    if (created) out.push(toCreatedEvent(created, asString(active?.["synchronizerId"])));
   }
   return out;
 }

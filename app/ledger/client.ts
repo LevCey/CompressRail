@@ -41,6 +41,7 @@ export class LedgerClient {
   async submitAndWait(actAs: string[], commands: Command[], opts: SubmitOptions = {}): Promise<ExerciseResult> {
     const userId = opts.userId ?? this.userId;
     const request = buildSubmitAndWait(actAs, commands, {
+      ...opts,
       commandId: opts.commandId ?? globalThis.crypto.randomUUID(),
       ...(userId !== undefined ? { userId } : {}),
     });

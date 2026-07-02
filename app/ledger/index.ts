@@ -5,6 +5,7 @@ export type {
   CreateCommand,
   ExerciseCommand,
   SubmitAndWaitRequest,
+  DisclosedContract,
   ExerciseResult,
   CreatedEvent,
   LedgerEnd,

@@ -21,9 +21,10 @@ export interface BlindnessResult {
 const TRADE_TEMPLATE = [TEMPLATES.BilateralTrade];
 
 export async function runOperatorBlindnessScenario(client: LedgerClient): Promise<BlindnessResult> {
-  const operator = await client.allocateParty("Operator");
-  const alice = await client.allocateParty("Alice");
-  const bob = await client.allocateParty("Bob");
+  const run = Math.random().toString(36).slice(2, 8);
+  const operator = await client.allocateParty(`Operator-${run}`);
+  const alice = await client.allocateParty(`Alice-${run}`);
+  const bob = await client.allocateParty(`Bob-${run}`);
 
   // Alice and Bob hold X25519 keys; the trade's content key is wrapped to them only,
   // never to the operator.
