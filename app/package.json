@@ -5,6 +5,15 @@
   "type": "module",
   "description": "Off-ledger client for CompressRail: payload encryption, commitments, and per-node verification.",
   "license": "Apache-2.0",
+  "exports": {
+    "./crypto": "./crypto/index.ts",
+    "./verify": "./verify/index.ts",
+    "./cycle": "./cycle/index.ts",
+    "./solver": "./solver/index.ts",
+    "./ledger": "./ledger/index.ts",
+    "./model": "./model/index.ts",
+    "./scenario/*": "./scenario/*.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",

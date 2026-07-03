@@ -17,11 +17,18 @@ code, assets, or copy are reused.
 
 ## Status
 
-Early scaffold: the shell renders with static preview data. Real per-party Ledger
-API reads, the Compression Console, the X-ray, and the privacy-matrix scoreboard
-land in following iterations.
+Party selection (R8.2) and the Compression Console (R8.4) are wired to the live
+Canton ledger through the sibling `app/` package (installed as a local `file:`
+dependency): the "Run compression cycle" action drives the real off-ledger client
+against a running sandbox — real encryption, the real per-node risk check, the real
+matching algorithm, and the atomic execute — and reports what the ledger actually
+returns, never a hardcoded number. Requires a sandbox running at
+`NEXT_PUBLIC_LEDGER_URL` (defaults to `http://localhost:7575`; see `../deploy`).
+Remaining: the Ledger / X-ray view and the animated privacy-matrix scoreboard.
 
 ## Running
+
+With a Canton sandbox running (`../deploy/sandbox.sh`):
 
 ```
 npm install
