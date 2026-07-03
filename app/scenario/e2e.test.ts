@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { fetchTransport, LedgerClient } from "../ledger/index";
 import { runOperatorBlindnessScenario } from "./blindness";
 import { runCompressionCycle } from "./cycle";
+import { runSelectiveDisclosureScenario } from "./disclosure";
 
 // Runs only when a live JSON Ledger API URL is provided, e.g.
 //   E2E_LEDGER_URL=http://localhost:7575 npx vitest run scenario/e2e.test.ts
@@ -35,5 +36,19 @@ describe.skipIf(!url)("the full compression cycle on a live Canton ledger", () =
     // Across the whole lifecycle — open, three commits, and the atomic execute —
     // the operator never becomes a stakeholder of any bilateral trade.
     expect(r.operatorTradeCount).toBe(0);
+  }, 60_000);
+});
+
+describe.skipIf(!url)("selective regulator disclosure on a live Canton ledger", () => {
+  it("scopes Regulator(A) to exactly Alice's trade, decryptable, with no transitive disclosure", async () => {
+    const client = new LedgerClient({ transport: fetchTransport(url as string), token: "" });
+    const r = await runSelectiveDisclosureScenario(client);
+
+    expect(r.regulatorASeesOwnTrade).toBe(true);
+    expect(r.regulatorADecryptedInstrument).toBe("IRS");
+    // R6.2: no transitive disclosure — Regulator(A) does not gain Bob's other trade,
+    // and Regulator(B) does not gain Alice's trade just because it was disclosed to A.
+    expect(r.regulatorASeesBobsTrade).toBe(false);
+    expect(r.regulatorBSeesAlicesTrade).toBe(false);
   }, 60_000);
 });
