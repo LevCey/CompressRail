@@ -16,6 +16,7 @@ export interface BlindnessResult {
   readonly bobTradeCount: number;
   readonly aliceDecryptedTerms: JsonValue;
   readonly onLedgerTermsAreCiphertext: boolean;
+  readonly parties: { readonly operator: string; readonly alice: string; readonly bob: string };
 }
 
 const TRADE_TEMPLATE = [TEMPLATES.BilateralTrade];
@@ -76,5 +77,6 @@ export async function runOperatorBlindnessScenario(client: LedgerClient): Promis
     bobTradeCount: bobAcs.length,
     aliceDecryptedTerms,
     onLedgerTermsAreCiphertext,
+    parties: { operator, alice, bob },
   };
 }

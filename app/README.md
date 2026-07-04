@@ -161,6 +161,16 @@ null), and decoders that read contracts back from the active-contract set. Only
 opaque ciphertext and commitments cross this boundary; no cleartext economic term is
 ever encoded onto the ledger.
 
+## Privacy matrix
+
+`scenario/privacy-matrix.ts` computes the same claim restated in the public
+README's privacy-matrix table, from real per-party projections rather than
+asserting it. Given a set of real, live-allocated party ids, it reads each party's
+own `BilateralTrade` and `CompressionCycle` projections and derives every cell —
+never a hardcoded "yes"/"no". A cell this module has no basis to measure (for
+example, a regulator row when no regulator was allocated by the driving scenario)
+renders honestly as "unknown" rather than a guessed value.
+
 ## Running
 
 ```

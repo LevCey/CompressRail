@@ -17,16 +17,15 @@ code, assets, or copy are reused.
 
 ## Status
 
-Party selection (R8.2), the Compression Console (R8.4), and the Ledger / X-ray view
-(R8.5) are wired to the live Canton ledger through the sibling `app/` package
-(installed as a local `file:` dependency): the "Run compression cycle" action drives
-the real off-ledger client against a running sandbox — real encryption, the real
-per-node risk check, the real matching algorithm, and the atomic execute — and the
-X-ray reads that party's own CREATE/ARCHIVE activity feed and contract detail
-directly, never a hardcoded number or a simulated event. Requires a sandbox running
-at `NEXT_PUBLIC_LEDGER_URL` (defaults to `http://localhost:7575`; see `../deploy`).
-Remaining: the animated privacy-matrix scoreboard, the "try to cheat" control, and
-the live counter.
+Party selection (R8.2), the Compression Console (R8.4), the Ledger / X-ray view
+(R8.5), and the privacy-matrix scoreboard (R8.6) are wired to the live Canton ledger
+through the sibling `app/` package (installed as a local `file:` dependency): the
+"Run compression cycle" action drives the real off-ledger client against a running
+sandbox, the "Run operator-blindness check" action writes a persistent encrypted
+trade the matrix can read from, and the matrix fills cell-by-cell from real
+per-party projection reads — never a hardcoded number or a simulated fill. Requires
+a sandbox running at `NEXT_PUBLIC_LEDGER_URL` (defaults to `http://localhost:7575`;
+see `../deploy`). Remaining: the "try to cheat" control and the live counter.
 
 ## Running
 

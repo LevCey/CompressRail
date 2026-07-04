@@ -5,6 +5,7 @@ import { TerminalShell } from "@/components/shell";
 import { PartySelector, PARTY_OPTIONS, type DemoRole } from "@/components/party-selector";
 import { CompressionConsole } from "@/components/compression-console";
 import { LedgerXRay } from "@/components/ledger-xray";
+import { PrivacyMatrixScoreboard } from "@/components/privacy-matrix-scoreboard";
 import { DemoSessionProvider, useDemoSession } from "@/lib/demo-session";
 import { LEDGER_URL } from "@/lib/ledger";
 
@@ -60,11 +61,16 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
             real party has been allocated.
           </div>
         ))}
-      {activeNav === "matrix" && (
-        <div className="rounded-md border border-border bg-surface p-6 text-sm text-muted">
-          This view is not built yet.
-        </div>
-      )}
+      {activeNav === "matrix" &&
+        (session.matrixParties ? (
+          <PrivacyMatrixScoreboard parties={session.matrixParties} />
+        ) : (
+          <div className="rounded-md border border-border bg-surface p-6 text-sm text-muted">
+            Run the operator-blindness check from the Compression Console first —
+            the matrix reads each real party&apos;s own live projection of that
+            trade.
+          </div>
+        ))}
     </TerminalShell>
   );
 }

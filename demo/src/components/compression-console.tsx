@@ -10,18 +10,27 @@ import { useLiveRun } from "@/lib/use-live-run";
 import { createDemoLedgerClient } from "@/lib/ledger";
 import { useDemoSession } from "@/lib/demo-session";
 import { runCompressionCycle, type CycleResult } from "@compressrail/app/scenario/cycle";
+import { runOperatorBlindnessScenario, type BlindnessResult } from "@compressrail/app/scenario/blindness";
 
 export function CompressionConsole() {
   const run = useCallback(() => runCompressionCycle(createDemoLedgerClient()), []);
   const { state, trigger } = useLiveRun<CycleResult>(run);
-  const { setLastCycle } = useDemoSession();
+  const { setLastCycle, setMatrixParties } = useDemoSession();
+
+  const runBlindness = useCallback(() => runOperatorBlindnessScenario(createDemoLedgerClient()), []);
+  const { state: blindnessState, trigger: triggerBlindness } = useLiveRun<BlindnessResult>(runBlindness);
 
   const running = state.status === "running";
   const result = state.status === "done" ? state.result : undefined;
+  const blindnessResult = blindnessState.status === "done" ? blindnessState.result : undefined;
 
   useEffect(() => {
     if (result) setLastCycle(result);
   }, [result, setLastCycle]);
+
+  useEffect(() => {
+    if (blindnessResult) setMatrixParties(blindnessResult.parties);
+  }, [blindnessResult, setMatrixParties]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -95,6 +104,40 @@ export function CompressionConsole() {
               </tr>
             </DataTable>
           </div>
+        )}
+      </div>
+
+      <div className="rounded-md border border-border bg-surface p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-medium text-foreground">Operator-blindness check</h2>
+            <p className="text-xs text-muted">
+              Writes a single encrypted bilateral trade and reads it back from both
+              counterparties and the operator, so the privacy matrix has a
+              persistent trade to read from.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={triggerBlindness}
+            disabled={blindnessState.status === "running"}
+            className="rounded border border-border px-4 py-2 text-sm text-foreground transition-colors hover:border-accent-action disabled:opacity-50"
+          >
+            {blindnessState.status === "running" ? "Running…" : "Run operator-blindness check"}
+          </button>
+        </div>
+
+        {blindnessState.status === "error" && (
+          <p className="mt-3 rounded border border-accent-alert/40 bg-accent-alert/10 px-3 py-2 text-xs text-accent-alert">
+            {blindnessState.message}
+          </p>
+        )}
+
+        {blindnessResult && (
+          <p className="mt-3 text-xs text-muted">
+            Operator&apos;s own projection: <span className="font-mono text-accent-live">{blindnessResult.operatorTradeCount}</span> bilateral trades.
+            Open the Privacy matrix tab to see the full read.
+          </p>
         )}
       </div>
     </div>
