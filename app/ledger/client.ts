@@ -8,12 +8,13 @@
 import {
   buildActiveContractsRequest,
   buildSubmitAndWait,
+  buildUpdatesRequest,
   createCommand,
   exerciseCommand,
   type SubmitOptions,
 } from "./requests";
-import { assertOk, parseActiveContracts, parseAllocatedParty, parseExerciseResult, parseLedgerEnd, parseParties } from "./parse";
-import type { Command, CreatedEvent, ExerciseResult, PartyDetails, TemplateId } from "./types";
+import { assertOk, parseActiveContracts, parseAllocatedParty, parseExerciseResult, parseLedgerEnd, parseParties, parseUpdates } from "./parse";
+import type { Command, CreatedEvent, ExerciseResult, LedgerUpdate, PartyDetails, TemplateId } from "./types";
 import type { Transport } from "./transport";
 
 export interface LedgerClientConfig {
@@ -86,6 +87,18 @@ export class LedgerClient {
     const res = await this.transport.get("/v2/parties", this.token);
     assertOk(res);
     return parseParties(res.body);
+  }
+
+  // The activity feed for a single party's projection: CREATE/ARCHIVE events in
+  // ledger order (R8.5). Defaults to the full ledger from the beginning up to the
+  // current end.
+  async updates(party: string, opts: { beginExclusive?: number; endInclusive?: number; templateIds?: readonly TemplateId[] } = {}): Promise<LedgerUpdate[]> {
+    const beginExclusive = opts.beginExclusive ?? 0;
+    const endInclusive = opts.endInclusive ?? (await this.ledgerEnd());
+    const request = buildUpdatesRequest(party, beginExclusive, endInclusive, opts.templateIds);
+    const res = await this.transport.post("/v2/updates", request, this.token);
+    assertOk(res);
+    return parseUpdates(res.body);
   }
 
   // Active contracts in a single party's projection. Defaults to the current ledger

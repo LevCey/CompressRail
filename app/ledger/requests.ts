@@ -42,6 +42,27 @@ export function buildSubmitAndWait(actAs: string[], commands: Command[], opts: S
   };
 }
 
+// A per-party updates (transaction stream) request. Scoped to one party the same
+// way as the active-contracts request, over a ledger-offset range.
+export function buildUpdatesRequest(
+  party: string,
+  beginExclusive: number,
+  endInclusive?: number,
+  templateIds?: readonly TemplateId[],
+): Record<string, unknown> {
+  const cumulative =
+    templateIds && templateIds.length > 0
+      ? templateIds.map((templateId) => ({
+          identifierFilter: { TemplateFilter: { value: { templateId, includeCreatedEventBlob: false } } } as const,
+        }))
+      : [{ identifierFilter: { WildcardFilter: { value: { includeCreatedEventBlob: false } } } as const }];
+  return {
+    beginExclusive,
+    ...(endInclusive !== undefined ? { endInclusive } : {}),
+    filter: { filtersByParty: { [party]: { cumulative } } },
+    verbose: false,
+  };
+}
 // A per-party active-contracts request. The party is the sole key in
 // `filtersByParty`, so the read is scoped to exactly that party's projection — the
 // visibility comes from Canton, not from filtering the result afterwards.

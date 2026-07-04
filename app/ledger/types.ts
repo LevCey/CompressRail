@@ -61,6 +61,27 @@ export interface CreatedEvent {
   readonly packageName?: string;
 }
 
+export interface ArchivedEvent {
+  readonly contractId: string;
+  readonly templateId: string;
+  readonly witnessParties: string[];
+  readonly packageName?: string;
+}
+
+// A single CREATE or ARCHIVE event within a transaction, in ledger order, tagged by
+// kind so a caller can render either without inspecting shape (R8.5).
+export type LedgerEvent =
+  | { readonly kind: "created"; readonly event: CreatedEvent }
+  | { readonly kind: "archived"; readonly event: ArchivedEvent };
+
+export interface LedgerUpdate {
+  readonly updateId: string;
+  readonly commandId: string;
+  readonly offset: number;
+  readonly effectiveAt: string;
+  readonly events: LedgerEvent[];
+}
+
 export interface LedgerEnd {
   readonly offset: number;
 }

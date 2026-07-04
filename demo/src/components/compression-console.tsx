@@ -4,18 +4,24 @@
 // hardcoded "0" (R5.4, R8.8).
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { KpiCard, DataTableTabs, DataTable } from "./shell";
 import { useLiveRun } from "@/lib/use-live-run";
 import { createDemoLedgerClient } from "@/lib/ledger";
+import { useDemoSession } from "@/lib/demo-session";
 import { runCompressionCycle, type CycleResult } from "@compressrail/app/scenario/cycle";
 
 export function CompressionConsole() {
   const run = useCallback(() => runCompressionCycle(createDemoLedgerClient()), []);
   const { state, trigger } = useLiveRun<CycleResult>(run);
+  const { setLastCycle } = useDemoSession();
 
   const running = state.status === "running";
   const result = state.status === "done" ? state.result : undefined;
+
+  useEffect(() => {
+    if (result) setLastCycle(result);
+  }, [result, setLastCycle]);
 
   return (
     <div className="flex flex-col gap-6">

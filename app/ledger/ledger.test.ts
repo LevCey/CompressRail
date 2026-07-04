@@ -178,6 +178,110 @@ describe("LedgerClient errors", () => {
   });
 });
 
+describe("LedgerClient.updates (X-ray activity feed)", () => {
+  // Shapes below are taken verbatim from a live Canton 3.5.1 sandbox response.
+  const txCreate = {
+    update: {
+      Transaction: {
+        value: {
+          updateId: "u-create",
+          commandId: "c1",
+          offset: 15,
+          effectiveAt: "2026-07-04T14:04:34.737403Z",
+          events: [
+            {
+              CreatedEvent: {
+                offset: 15,
+                contractId: "00trade",
+                templateId: "pkg:CompressRail.Trade:BilateralTrade",
+                createArgument: { cptyA: "A::1220", cptyB: "B::1220", tradeRef: "AB" },
+                signatories: ["A::1220", "B::1220"],
+                observers: [],
+                witnessParties: ["A::1220"],
+                createdAt: "2026-07-04T14:04:34.737403Z",
+                createdEventBlob: "",
+                packageName: "compressrail",
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+  const txArchiveThenCreate = {
+    update: {
+      Transaction: {
+        value: {
+          updateId: "u-exec",
+          commandId: "",
+          offset: 33,
+          effectiveAt: "2026-07-04T14:05:20.647677Z",
+          events: [
+            {
+              ArchivedEvent: {
+                offset: 33,
+                contractId: "00cyc-old",
+                templateId: "pkg:CompressRail.Cycle:CompressionCycle",
+                witnessParties: ["Op::1220"],
+                packageName: "compressrail",
+              },
+            },
+            {
+              CreatedEvent: {
+                offset: 33,
+                contractId: "00cyc-new",
+                templateId: "pkg:CompressRail.Cycle:CompressionCycle",
+                createArgument: { cycleId: "cyc1" },
+                signatories: ["Op::1220"],
+                observers: [],
+                witnessParties: ["Op::1220"],
+                createdAt: "2026-07-04T14:05:20.647677Z",
+                createdEventBlob: "",
+                packageName: "compressrail",
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+  const offsetCheckpoint = { update: { OffsetCheckpoint: { value: { offset: 40, synchronizerTimes: [] } } } };
+
+  it("parses CreatedEvent and ArchivedEvent from the transaction event feed, in order", async () => {
+    const { transport } = mock({
+      "/v2/updates": { status: 200, body: [txCreate, txArchiveThenCreate] },
+    });
+    const client = new LedgerClient({ transport, token: "jwt" });
+    const updates = await client.updates("A::1220", { endInclusive: 40 });
+
+    expect(updates).toHaveLength(2);
+    expect(updates[0]).toMatchObject({ updateId: "u-create", commandId: "c1", offset: 15 });
+    expect(updates[0]!.events).toEqual([{ kind: "created", event: expect.objectContaining({ contractId: "00trade" }) }]);
+
+    expect(updates[1]!.events.map((e) => e.kind)).toEqual(["archived", "created"]);
+    expect(updates[1]!.events[0]).toMatchObject({ kind: "archived", event: { contractId: "00cyc-old" } });
+    expect(updates[1]!.events[1]).toMatchObject({ kind: "created", event: { contractId: "00cyc-new" } });
+  });
+
+  it("skips non-transaction update kinds such as OffsetCheckpoint", async () => {
+    const { transport } = mock({ "/v2/updates": { status: 200, body: [txCreate, offsetCheckpoint] } });
+    const client = new LedgerClient({ transport, token: "jwt" });
+    const updates = await client.updates("A::1220", { endInclusive: 40 });
+    expect(updates).toHaveLength(1);
+    expect(updates[0]!.updateId).toBe("u-create");
+  });
+
+  it("scopes the request to the requested party and offset range", async () => {
+    const { transport, calls } = mock({ "/v2/updates": { status: 200, body: [] } });
+    const client = new LedgerClient({ transport, token: "jwt" });
+    await client.updates("Op::1220", { beginExclusive: 10, endInclusive: 20 });
+    const call = calls.find((c) => c.path === "/v2/updates")!;
+    expect(call.body).toMatchObject({ beginExclusive: 10, endInclusive: 20 });
+    const filter = (call.body as { filter: { filtersByParty: Record<string, unknown> } }).filter;
+    expect(Object.keys(filter.filtersByParty)).toEqual(["Op::1220"]);
+  });
+});
+
 describe("LedgerClient party management", () => {
   it("allocates a party and returns its id", async () => {
     const { transport, calls } = mock({

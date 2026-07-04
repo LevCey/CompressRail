@@ -32,6 +32,15 @@ export interface CycleResult {
   readonly carolTradeCount: number;
   readonly replacementLegCount: number;
   readonly aliceDecryptedReplacementNotional: number;
+  // The real party ids allocated for this run, so a caller (e.g. the demo) can
+  // drive further live reads — the Ledger/X-ray view, the privacy-matrix
+  // scoreboard — against the exact parties this cycle actually ran on.
+  readonly parties: {
+    readonly operator: string;
+    readonly alice: string;
+    readonly bob: string;
+    readonly carol: string;
+  };
 }
 
 interface Party {
@@ -185,5 +194,6 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
     carolTradeCount: carolTrades.length,
     replacementLegCount: matched.replacements.length,
     aliceDecryptedReplacementNotional,
+    parties: { operator, alice: alice.id, bob: bob.id, carol: carol.id },
   };
 }

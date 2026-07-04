@@ -1,5 +1,5 @@
 // Response parsing and error handling for the JSON Ledger API.
-import type { CreatedEvent, ExerciseResult, LedgerEnd, PartyDetails } from "./types";
+import type { ArchivedEvent, CreatedEvent, ExerciseResult, LedgerEnd, LedgerEvent, LedgerUpdate, PartyDetails } from "./types";
 import type { LedgerResponse } from "./transport";
 
 export class LedgerError extends Error {
@@ -76,6 +76,52 @@ export function parseParties(body: unknown): PartyDetails[] {
   for (const entry of arr) {
     const r = asRecord(entry);
     if (r) out.push(toPartyDetails(r));
+  }
+  return out;
+}
+
+function toArchivedEvent(r: Record<string, unknown>): ArchivedEvent {
+  return {
+    contractId: asString(r["contractId"]),
+    templateId: asString(r["templateId"]),
+    witnessParties: asStringArray(r["witnessParties"]),
+    ...(typeof r["packageName"] === "string" ? { packageName: r["packageName"] } : {}),
+  };
+}
+
+// The updates response is an array of `{ update: { Transaction: { value: {...} } } }`
+// entries (other update kinds, such as OffsetCheckpoint, are skipped); each
+// transaction's `events` array holds CreatedEvent/ArchivedEvent entries in ledger
+// order, which is exactly the CREATE/ARCHIVE activity feed the X-ray view renders
+// (R8.5). A synchronizerId is not present at the per-event level here, so events
+// carry none; the X-ray does not need it.
+export function parseUpdates(body: unknown): LedgerUpdate[] {
+  if (!Array.isArray(body)) {
+    throw new LedgerError("unexpected updates response (expected an array)");
+  }
+  const out: LedgerUpdate[] = [];
+  for (const entry of body) {
+    const tx = asRecord(asRecord(asRecord(entry)?.["update"])?.["Transaction"])?.["value"];
+    const value = asRecord(tx);
+    if (!value) continue;
+    const rawEvents = value["events"];
+    const events: LedgerEvent[] = Array.isArray(rawEvents)
+      ? rawEvents.flatMap((e): LedgerEvent[] => {
+          const rec = asRecord(e);
+          const created = asRecord(rec?.["CreatedEvent"]);
+          if (created) return [{ kind: "created", event: toCreatedEvent(created, "") }];
+          const archived = asRecord(rec?.["ArchivedEvent"]);
+          if (archived) return [{ kind: "archived", event: toArchivedEvent(archived) }];
+          return [];
+        })
+      : [];
+    out.push({
+      updateId: asString(value["updateId"]),
+      commandId: asString(value["commandId"]),
+      offset: Number(value["offset"] ?? 0),
+      effectiveAt: asString(value["effectiveAt"]),
+      events,
+    });
   }
   return out;
 }

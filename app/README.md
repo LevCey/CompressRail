@@ -144,12 +144,13 @@ risk models (SIMM, SA-CCR, CRIF) are out of scope.
 ## Ledger access
 
 `ledger/` is a small JSON Ledger API v2 client. It submits commands (create,
-exercise) and reads active contracts scoped to a single party, so visibility comes
-from Canton's projection rather than from filtering in the client. The base URL and
-the per-party access token are configuration; the transport is injectable, and the
-client holds no key that can decrypt a participant's payload — it only ever moves
-ciphertext and commitments. Request and response shapes follow the published JSON
-Ledger API reference.
+exercise) and reads a single party's active contracts and its CREATE/ARCHIVE
+activity feed (`updates`), so visibility comes from Canton's projection rather than
+from filtering in the client. The base URL and the per-party access token are
+configuration; the transport is injectable, and the client holds no key that can
+decrypt a participant's payload — it only ever moves ciphertext and commitments.
+Request and response shapes follow the published JSON Ledger API reference and were
+additionally verified against a live Canton sandbox.
 
 ## Model bindings
 
