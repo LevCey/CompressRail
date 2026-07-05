@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens for the dealer-terminal shell shared by the demo and landing
+ * surfaces (R8.1). Dark by default — this is a trading-terminal product, not a
+ * light-mode marketing page. Numerics render in the monospace family with
+ * green/red signing; the accent tokens below are the only colors carrying meaning
+ * (action, propose, alert, live) so the interface stays legible at a glance.
+ */
+:root {
+  --background: #0a0e14;
+  --surface: #10151d;
+  --surface-raised: #161d28;
+  --border: #232b38;
+  --foreground: #e6edf3;
+  --muted: #7d8998;
+
+  --accent-action: #3b82f6; /* primary actions: join cycle, submit, confirm */
+  --accent-propose: #a78bfa; /* proposals awaiting a counterparty: cycle open, pending commit */
+  --accent-alert: #f43f5e; /* declines, aborts, failed verification, ciphertext-denied */
+  --accent-live: #22c55e; /* live/positive: connected, committed, within tolerance, released */
+
+  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent-action: var(--accent-action);
+  --color-accent-propose: var(--accent-propose);
+  --color-accent-alert: var(--accent-alert);
+  --color-accent-live: var(--accent-live);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
