@@ -6,6 +6,7 @@ import { PartySelector, PARTY_OPTIONS, type DemoRole } from "@/components/party-
 import { CompressionConsole } from "@/components/compression-console";
 import { LedgerXRay } from "@/components/ledger-xray";
 import { PrivacyMatrixScoreboard } from "@/components/privacy-matrix-scoreboard";
+import { TryToCheat } from "@/components/try-to-cheat";
 import { DemoSessionProvider, useDemoSession } from "@/lib/demo-session";
 import { LEDGER_URL } from "@/lib/ledger";
 
@@ -53,7 +54,10 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
       {activeNav === "console" && <CompressionConsole />}
       {activeNav === "ledger" &&
         (partyId ? (
-          <LedgerXRay party={partyId} partyLabel={option?.label ?? role} />
+          <div className="flex flex-col gap-4">
+            <LedgerXRay party={partyId} partyLabel={option?.label ?? role} />
+            {role === "operator" && <TryToCheat operator={partyId} />}
+          </div>
         ) : (
           <div className="rounded-md border border-border bg-surface p-6 text-sm text-muted">
             Run a compression cycle from the Compression Console first — the X-ray

@@ -171,6 +171,15 @@ never a hardcoded "yes"/"no". A cell this module has no basis to measure (for
 example, a regulator row when no regulator was allocated by the driving scenario)
 renders honestly as "unknown" rather than a guessed value.
 
+## Try to cheat
+
+`scenario/cheat.ts` is the falsification the demo's "try to cheat" control drives
+(R8.7). Acting as the operator, it reads the operator's own live `BilateralTrade`
+projection — empty by construction (R5.1) — and, only in the hypothetical case
+where it were not, attempts to open a trade with the operator's own key pair, which
+fails because that key was never a wrap recipient (R5.3). Either path is a genuine
+outcome of a real attempt against the live ledger, never a scripted failure.
+
 ## Running
 
 ```
