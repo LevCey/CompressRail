@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens for the dealer-terminal shell shared across the demo, landing, and
+ * docs surfaces (R8.1). Dark by default. Numerics render in the monospace family
+ * with green/red signing; the accent tokens below are the only colors carrying
+ * meaning (action, propose, alert, live) so the interface stays legible at a glance.
+ */
+:root {
+  --background: #0a0e14;
+  --surface: #10151d;
+  --surface-raised: #161d28;
+  --border: #232b38;
+  --foreground: #e6edf3;
+  --muted: #7d8998;
+
+  --accent-action: #3b82f6;
+  --accent-propose: #a78bfa;
+  --accent-alert: #f43f5e;
+  --accent-live: #22c55e;
+
+  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent-action: var(--accent-action);
+  --color-accent-propose: var(--accent-propose);
+  --color-accent-alert: var(--accent-alert);
+  --color-accent-live: var(--accent-live);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.docs-prose h1 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.docs-prose h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+}
+
+.docs-prose p {
+  margin-bottom: 1rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.docs-prose strong {
+  color: var(--foreground);
+}
+
+.docs-prose a {
+  color: var(--accent-action);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+}
+
+.docs-prose a:hover {
+  text-decoration-color: currentColor;
+}
+
+.docs-prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.docs-prose li {
+  margin-bottom: 0.4rem;
+}
+
+.docs-prose blockquote {
+  border-left: 2px solid var(--accent-propose);
+  padding-left: 1rem;
+  color: var(--foreground);
+  margin: 1rem 0;
+}
+
+.docs-prose pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+}
+
+.docs-prose code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.85em;
+}
+
+.docs-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.docs-prose th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+}
+
+.docs-prose td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+}
