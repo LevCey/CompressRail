@@ -6,8 +6,11 @@ CompressRail lets a group of derivatives counterparties tear up offsetting bilat
 atomically redistribute counterparty exposure — without any party, including the operator that runs
 the cycle, ever seeing another participant's positions.
 
-> **Status:** early development for the Encode "Build on Canton" hackathon (June–July 2026). Runs on
-> Canton DevNet. The Daml model and demo are being built; see [Roadmap](#roadmap) for current status.
+> **Status:** early-stage MVP for the Encode "Build on Canton" hackathon (June–July 2026). The Daml
+> model, the off-ledger client, and the demo/landing/docs sites are built and verified against a local
+> Canton sandbox — including live runs of the atomic compression cycle, selective disclosure, and the
+> operator-blindness check the demo's privacy matrix and "try to cheat" control drive. See
+> [Roadmap](#roadmap) for what is not yet built (notably, running across separate participant nodes).
 > Not audited. Not for production use.
 
 ## The problem
@@ -108,33 +111,32 @@ the interface.
 ```
 daml/      Daml model: participant profiles, bilateral trades, cycle proposal and
            participation, the atomic execute, and selective disclosure
-app/       Off-ledger client: payload encryption, commitments, per-node verification,
-           and Ledger API access
-demo/      Demo application (demo.compressrail.com): party selection and the
-           per-party views, each rendered from that party's own ledger projection
-landing/   Landing site (compressrail.com)
-docs/      Public documentation (docs.compressrail.com)
-deploy/    Multi-node Canton DevNet topology and party allocation (config-driven)
+app/       Off-ledger client: payload encryption and commitments (crypto/), the
+           per-node risk check (verify/), the participant-side cycle flow (cycle/),
+           the matching stand-in (solver/), the Ledger API client (ledger/), typed
+           model bindings (model/), and live scenarios driving all of the above
+           (scenario/)
+demo/      Demo application: party selection and the per-party views, each rendered
+           from that party's own ledger projection
+landing/   Landing site
+docs/      Native public documentation
+deploy/    Local Canton sandbox script; a multi-node topology is on the roadmap
 ```
 
 ## Getting started
 
 Prerequisites:
 
-- Daml SDK 3.x (the pinned version is recorded in `daml/daml.yaml`)
-- Access to a local Canton network / DevNet
+- The Daml SDK 3.5.x toolchain, via DPM (the pinned version is recorded in `daml/daml.yaml`)
+- Node.js, for the off-ledger client and the demo/landing/docs sites
 
-Build the model:
+Build the model, start a local sandbox, and run the off-ledger client's tests — see
+[`deploy/README.md`](deploy/README.md) and [`app/README.md`](app/README.md) for the exact commands.
 
-```
-cd daml
-daml build
-```
-
-The demo runs a compression cycle across separate participant nodes and lets you inspect each party's
-view — including the operator's, which contains only ciphertext. Node configuration for the operator,
-participants, and regulator lives in `deploy/`. Detailed run instructions are added as the components
-land; see [Roadmap](#roadmap).
+The demo (`demo/README.md`) consumes the off-ledger client as a local dependency and drives a
+compression cycle against that sandbox, letting you inspect each party's view — including the
+operator's, which contains only ciphertext. Everything currently runs on one sandbox participant; see
+[Roadmap](#roadmap) for running across separate participant nodes.
 
 ## Demo
 
@@ -142,12 +144,17 @@ You choose a party to act as — a participant, the operator, or a regulator —
 terminal view, rendered from its own ledger projection. The demo is designed to make the privacy claim
 legible and falsifiable:
 
-- Three views side by side, from the same ledger at the same instant: a participant (its book in
-  cleartext), the operator (the same contracts, with every economic field shown as the real on-ledger
-  ciphertext), and a regulator (one participant's book only).
-- A control that lets you act as the operator and try to reveal a participant's positions — and watch it
-  fail, because there is no cleartext on the ledger to return.
-- A live count of margin released alongside the number of books the operator saw: zero.
+- A **Compression Console** that runs a real compression cycle against the live ledger and reports what
+  it actually returns, never a hardcoded figure.
+- A **Ledger / X-ray** activity feed of that party's own CREATE/ARCHIVE events, with every economic
+  field shown as the real on-ledger ciphertext, not simulated redaction.
+- A **privacy-matrix scoreboard** that fills in cell by cell from real per-party projection reads.
+- A control that lets you act as the operator and genuinely try to reveal a participant's
+  positions — and watch it fail, because there is no cleartext on the ledger to return.
+- A **live counter** of positions seen by the operator, read from the same projections, never asserted
+  as zero.
+
+Each party's view is its own; the demo does not currently render several parties' views side by side.
 
 ## Scope and non-goals
 
@@ -157,10 +164,12 @@ This is a hackathon MVP focused on the privacy architecture, not a production co
   (SIMM, SA-CCR, CRIF) are out of scope.
 - Operator-blind matching via multi-party computation, topology hiding, legal-enforceability wrappers,
   asset settlement and custody, and MainNet deployment are roadmap items, not part of this build.
-- Key handling is demo-grade. The code is unaudited and runs on DevNet only.
+- Key handling is demo-grade. The code is unaudited and currently runs on a local Canton sandbox only.
 
 ## Roadmap
 
+- Running the model across separate participant nodes rather than one sandbox participant, to harden
+  the cross-node privacy proof.
 - Operator-blind matching via per-node multi-party computation, which also removes the operator's
   visibility of cycle topology.
 - Replacement trades modeled against the parties' existing master agreements.
