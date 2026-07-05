@@ -7,6 +7,7 @@ import { CompressionConsole } from "@/components/compression-console";
 import { LedgerXRay } from "@/components/ledger-xray";
 import { PrivacyMatrixScoreboard } from "@/components/privacy-matrix-scoreboard";
 import { TryToCheat } from "@/components/try-to-cheat";
+import { LiveCounter } from "@/components/live-counter";
 import { DemoSessionProvider, useDemoSession } from "@/lib/demo-session";
 import { LEDGER_URL } from "@/lib/ledger";
 
@@ -51,6 +52,11 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
       network={LEDGER_URL}
       cycleStatus="No cycle open"
     >
+      {session.matrixParties && (
+        <div className="mb-4">
+          <LiveCounter parties={session.matrixParties} />
+        </div>
+      )}
       {activeNav === "console" && <CompressionConsole />}
       {activeNav === "ledger" &&
         (partyId ? (
