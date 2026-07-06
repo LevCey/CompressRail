@@ -31,7 +31,9 @@ export interface CycleResult {
   readonly bobTradeCount: number;
   readonly carolTradeCount: number;
   readonly replacementLegCount: number;
-  readonly aliceDecryptedReplacementNotional: number;
+  // True if Alice could decrypt the replacement leg she holds after the cycle and it
+  // carried real economic content — a decryption-success check, not a notional.
+  readonly aliceDecryptedReplacementLeg: boolean;
   // The real party ids allocated for this run, so a caller (e.g. the demo) can
   // drive further live reads — the Ledger/X-ray view, the privacy-matrix
   // scoreboard — against the exact parties this cycle actually ran on.
@@ -178,13 +180,13 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
   ]);
 
   // Alice decrypts whatever replacement leg she now holds (there may be none, if
-  // she nets out of the compressed topology entirely) and reads its risk back —
-  // proving the on-ledger ciphertext round-trips to real economic content.
-  let aliceDecryptedReplacementNotional = 0;
+  // she nets out of the compressed topology entirely) and confirms it carries real
+  // economic content — proving the on-ledger ciphertext round-trips, not a notional.
+  let aliceDecryptedReplacementLeg = false;
   if (aliceTrades.length > 0) {
     const decoded = decodeBilateralTrade(aliceTrades[0]!.createArgument);
     const opened = await openLeg({ ciphertext: decoded.terms, commitment: decoded.commitment, wrappedKeys: sealedFor(decoded.cptyA, decoded.cptyB).wrappedKeys }, alice.id, alice.keys);
-    aliceDecryptedReplacementNotional = typeof (opened as Record<string, unknown>)["risk"] === "object" ? 1 : 0;
+    aliceDecryptedReplacementLeg = typeof (opened as Record<string, unknown>)["risk"] === "object";
   }
 
   return {
@@ -193,7 +195,7 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
     bobTradeCount: bobTrades.length,
     carolTradeCount: carolTrades.length,
     replacementLegCount: matched.replacements.length,
-    aliceDecryptedReplacementNotional,
+    aliceDecryptedReplacementLeg,
     parties: { operator, alice: alice.id, bob: bob.id, carol: carol.id },
   };
 }
