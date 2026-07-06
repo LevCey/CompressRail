@@ -16,7 +16,7 @@ export default function Home() {
             Privacy boundary
           </a>
           <a
-            href="https://github.com/LevCey/CompressRail"
+            href="https://docs.compressrail.com"
             className="hover:text-foreground"
             target="_blank"
             rel="noopener noreferrer"
@@ -24,7 +24,7 @@ export default function Home() {
             Docs
           </a>
           <a
-            href="https://github.com/LevCey/CompressRail"
+            href="https://demo.compressrail.com"
             className="rounded border border-border px-3 py-1.5 text-foreground transition-colors hover:border-accent-action"
             target="_blank"
             rel="noopener noreferrer"
@@ -49,7 +49,7 @@ export default function Home() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
-              href="https://github.com/LevCey/CompressRail"
+              href="https://demo.compressrail.com"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded bg-accent-action px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
@@ -57,7 +57,7 @@ export default function Home() {
               Live demo
             </a>
             <a
-              href="https://github.com/LevCey/CompressRail"
+              href="https://docs.compressrail.com"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded border border-border px-5 py-2.5 text-sm text-foreground transition-colors hover:border-accent-action"
