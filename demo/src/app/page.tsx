@@ -18,6 +18,10 @@ const NAV_ITEMS = [
 ];
 
 function roleToPartyId(role: DemoRole, session: ReturnType<typeof useDemoSession>): string | null {
+  // The regulator's scoped view comes from the operator-blindness / disclosure
+  // scenario, which allocates a regulator and discloses Participant A's trade to it —
+  // not from the compression cycle (which fully compresses and leaves nothing).
+  if (role === "regulator") return session.matrixParties?.regulator ?? null;
   const cycle = session.lastCycle;
   if (!cycle) return null;
   switch (role) {
@@ -29,8 +33,6 @@ function roleToPartyId(role: DemoRole, session: ReturnType<typeof useDemoSession
       return cycle.parties.carol;
     case "operator":
       return cycle.parties.operator;
-    case "regulator":
-      return null; // no regulator is allocated by the compression-cycle scenario
   }
 }
 
@@ -66,9 +68,20 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
           </div>
         ) : (
           <div className="rounded-md border border-border bg-surface p-6 text-sm text-muted">
-            Run a compression cycle from the Compression Console first — the X-ray
-            reads this party&apos;s own live projection, which does not exist until a
-            real party has been allocated.
+            {role === "regulator" ? (
+              <>
+                Run the operator-blindness check from the Compression Console
+                first — the regulator&apos;s scoped view exists once Participant A
+                discloses a trade to it, and reads the regulator&apos;s own live
+                projection.
+              </>
+            ) : (
+              <>
+                Run a compression cycle from the Compression Console first — the
+                X-ray reads this party&apos;s own live projection, which does not
+                exist until a real party has been allocated.
+              </>
+            )}
           </div>
         ))}
       {activeNav === "matrix" &&

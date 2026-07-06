@@ -19,6 +19,11 @@ describe.skipIf(!url)("operator-blindness on a live Canton ledger", () => {
     expect(r.operatorTradeCount).toBe(0);
     expect(r.onLedgerTermsAreCiphertext).toBe(true);
     expect(r.aliceDecryptedTerms).toMatchObject({ instrument: "IRS" });
+    // Alice's home regulator has a real scoped view: it sees and can decrypt exactly
+    // her disclosed trade, from its own projection.
+    expect(r.regulatorSeesAliceTrade).toBe(true);
+    expect(r.regulatorTradeCount).toBe(1);
+    expect(r.parties.regulator).toBeTruthy();
   }, 60_000);
 });
 

@@ -115,4 +115,17 @@ describe("computePrivacyMatrix", () => {
     const matrix = await computePrivacyMatrix(client, parties);
     expect(matrix.rows.every((r) => r.regulator === "unknown")).toBe(true);
   });
+
+  it("fills the regulator column from the regulator's own projection when a trade is disclosed to it", async () => {
+    const aliceBob = createBilateralTrade({ cptyA: "A", cptyB: "B", tradeRef: "AB", terms: "c", commitment: "h", auditors: ["Reg"] });
+    const client = mockClient({ A: { trades: [aliceBob] }, B: { trades: [aliceBob] }, Op: {}, Reg: { trades: [aliceBob] } });
+    const matrix = await computePrivacyMatrix(client, { operator: "Op", alice: "A", bob: "B", regulator: "Reg" });
+
+    // The regulator sees Alice's disclosed trade (scoped), but not Bob's own terms,
+    // and is not an observer on any cycle.
+    expect(matrix.rows.find((r) => r.label === "A's economic terms")!.regulator).toBe("scoped");
+    expect(matrix.rows.find((r) => r.label === "B's economic terms")!.regulator).toBe("no");
+    expect(matrix.rows.find((r) => r.label === "Cycle topology and validity")!.regulator).toBe("no");
+    expect(matrix.regulatorTradeCount).toBe(1);
+  });
 });
