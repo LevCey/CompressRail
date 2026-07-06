@@ -61,6 +61,13 @@ homomorphic encryption, and not MPC. It does not make replacement trades legally
 question of the parties' agreements, not of the protocol. It never takes custody of any asset; it
 produces compression instructions and records.
 
+Two invariants worth stating plainly. **Authenticity comes from the ledger, not the ciphertext:** the
+sealed payload is anonymous, so a leg's terms are trustworthy only together with the Daml signatories on
+the contract carrying its commitment — never standalone. **Teardown consent is by convention in this
+build:** the trades a cycle will tear up are visible to each participant before it commits, but the
+commit does not yet force a participant to re-assert consent to that exact list on-ledger; binding it
+(via the modeled `NominateIntoCycle` marker) is roadmap.
+
 ## Why Canton
 
 The problem needs three properties at the same time, which Canton provides natively:
@@ -106,7 +113,9 @@ The lifecycle of one compression cycle:
 
 This is enforced by Canton and verified by reading each party's own ledger view — not by filtering in
 the interface. The last row is a visibility proxy — whether a party's own trades were torn up by the
-cycle — not a computed margin number; initial-margin models (SIMM, SA-CCR) are out of scope.
+cycle — not a computed margin number; initial-margin models (SIMM, SA-CCR) are out of scope. Its
+values describe the post-cycle state; the demo drives its live scoreboard from a persistent disclosed
+trade (no cycle has run in that view), so that row reads "no" across it there.
 
 ## Repository layout
 

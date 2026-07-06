@@ -46,7 +46,10 @@ deploy/    Local Canton sandbox script and topology notes`}</pre>
           signed only by its two counterparties. This composition is required
           because a Daml choice&apos;s authority does not accumulate across
           separate exercises — the accumulating contract is what lets one atomic
-          transaction carry every participant&apos;s authority.
+          transaction carry every participant&apos;s authority. Commit checks only
+          that the participant was invited and within tolerance, not the teardown
+          list — so teardown consent is by convention in this build (the list is
+          visible before committing); binding it via NominateIntoCycle is roadmap.
         </li>
         <li>
           <strong>SelectiveAuditDisclosure</strong> — participant-initiated;

@@ -98,9 +98,11 @@ export default function PrivacyModel() {
         ledger view — not by filtering in the interface. The last row is a
         visibility proxy — whether a party&apos;s own trades were torn up by the
         cycle — not a computed margin number; initial-margin models (SIMM, SA-CCR)
-        are out of scope. The demo&apos;s{" "}
+        are out of scope. Its values describe the post-cycle state; the demo&apos;s{" "}
         <Link href="/demo-guide">privacy-matrix scoreboard</Link> computes this
-        table live from real per-party projection reads.
+        table live from real per-party projection reads, driven from a persistent
+        disclosed trade (no cycle has run in that view), so that row reads
+        &quot;no&quot; across it there.
       </p>
 
       <h2>What this is not</h2>
@@ -128,6 +130,19 @@ export default function PrivacyModel() {
           <strong>Not production-grade key management.</strong> Key handling in
           this build is demo-grade, clearly labeled as such. Production key
           management (KMS/HSM, rotation, external signing) is future work.
+        </li>
+        <li>
+          <strong>Authenticity is from the ledger, not the sealed box.</strong>{" "}
+          The sealed payload is anonymous, so a leg&apos;s terms are trustworthy
+          only together with the Daml signatories on the contract carrying its
+          commitment — never standalone.
+        </li>
+        <li>
+          <strong>Not on-ledger teardown consent (yet).</strong> The trades a
+          cycle tears up are visible to each participant before it commits, but
+          the commit does not yet force it to re-assert consent to that exact
+          list on-ledger; binding it via the modeled NominateIntoCycle marker is
+          roadmap.
         </li>
       </ul>
 
