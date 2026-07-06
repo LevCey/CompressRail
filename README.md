@@ -80,8 +80,9 @@ The lifecycle of one compression cycle:
 
 1. Each participant holds its bilateral trades on-ledger as encrypted payloads with hash commitments.
    Cleartext never leaves the participant's own node.
-2. The operator opens a cycle: a proposal carrying a cycle id, the nominated trades by reference, the
-   netting topology, and a deadline. It carries no economic terms.
+2. The operator opens a cycle: a proposal carrying a cycle id, the trades to tear up (referenced
+   directly by contract id — the model also defines a `NominateIntoCycle` marker, not yet used in this
+   build), the netting topology, and a deadline. It carries no economic terms.
 3. Each participant, on its own node, decrypts its own legs, computes its post-cycle risk delta against
    its tolerance, and — only if it passes — publishes a participation contract: its commitments to the
    legs it will tear up and the replacements it will sign, plus a boolean attestation. This computation
@@ -101,10 +102,11 @@ The lifecycle of one compression cycle:
 | B's economic terms | no | yes | no | no |
 | Full cycle plan in cleartext | own legs only | own legs only | no | no |
 | Cycle topology and validity | own legs | own legs | yes (no economics) | no |
-| Margin released (own) | yes | yes | no | yes (scoped) |
+| Own positions compressed | yes | yes | no | yes (scoped) |
 
 This is enforced by Canton and verified by reading each party's own ledger view — not by filtering in
-the interface.
+the interface. The last row is a visibility proxy — whether a party's own trades were torn up by the
+cycle — not a computed margin number; initial-margin models (SIMM, SA-CCR) are out of scope.
 
 ## Repository layout
 

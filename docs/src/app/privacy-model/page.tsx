@@ -85,7 +85,7 @@ export default function PrivacyModel() {
             <td>no</td>
           </tr>
           <tr>
-            <td>Margin released (own)</td>
+            <td>Own positions compressed</td>
             <td>yes</td>
             <td>yes</td>
             <td>no</td>
@@ -95,7 +95,10 @@ export default function PrivacyModel() {
       </table>
       <p>
         This is enforced by Canton and verified by reading each party&apos;s own
-        ledger view — not by filtering in the interface. The demo&apos;s{" "}
+        ledger view — not by filtering in the interface. The last row is a
+        visibility proxy — whether a party&apos;s own trades were torn up by the
+        cycle — not a computed margin number; initial-margin models (SIMM, SA-CCR)
+        are out of scope. The demo&apos;s{" "}
         <Link href="/demo-guide">privacy-matrix scoreboard</Link> computes this
         table live from real per-party projection reads.
       </p>

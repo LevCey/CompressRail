@@ -31,8 +31,9 @@ deploy/    Local Canton sandbox script and topology notes`}</pre>
           <strong>BilateralTrade</strong> — signatories: the two counterparties
           only. Carries the trade&apos;s economic terms as ciphertext plus a hash
           commitment. No operator party is ever a stakeholder. A
-          NominateIntoCycle choice marks it eligible for a cycle by reference,
-          without revealing terms.
+          NominateIntoCycle choice can mark a trade eligible for a cycle by
+          reference without revealing terms — modeled, though the current live
+          flow references the teardown trades directly by contract id.
         </li>
         <li>
           <strong>CompressionCycle</strong> — an accumulating contract. It starts
