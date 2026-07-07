@@ -6,6 +6,8 @@ CompressRail lets a group of derivatives counterparties tear up offsetting bilat
 atomically redistribute counterparty exposure — without any party, including the operator that runs
 the cycle, ever seeing another participant's positions.
 
+**Live demo:** [demo.compressrail.com](https://demo.compressrail.com) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com)
+
 > **Status:** early-stage MVP for the Encode "Build on Canton" hackathon (June–July 2026). The Daml
 > model, the off-ledger client, and the demo/landing/docs sites are built and verified against a local
 > Canton sandbox — including live runs of the atomic compression cycle, selective disclosure, and the
@@ -146,8 +148,9 @@ Build the model, start a local sandbox, and run the off-ledger client's tests �
 
 The demo (`demo/README.md`) consumes the off-ledger client as a local dependency and drives a
 compression cycle against that sandbox, letting you inspect each party's view — including the
-operator's, which contains only ciphertext. Everything currently runs on one sandbox participant; see
-[Roadmap](#roadmap) for running across separate participant nodes.
+operator's, which contains only ciphertext. Everything runs on a single participant node (the hosted
+demo runs against a Canton DevNet validator); see [Roadmap](#roadmap) for running across separate
+participant nodes.
 
 ## Demo
 
@@ -175,7 +178,9 @@ This is a hackathon MVP focused on the privacy architecture, not a production co
   (SIMM, SA-CCR, CRIF) are out of scope.
 - Operator-blind matching via multi-party computation, topology hiding, legal-enforceability wrappers,
   asset settlement and custody, and MainNet deployment are roadmap items, not part of this build.
-- Key handling is demo-grade. The code is unaudited and currently runs on a local Canton sandbox only.
+- Key handling is demo-grade, and the code is unaudited. It runs on a local Canton sandbox for
+  development; the hosted demo runs against a public Canton DevNet validator (a single participant, taken
+  down after the hackathon).
 
 ## Roadmap
 
