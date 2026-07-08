@@ -150,7 +150,8 @@ from filtering in the client. The base URL and the per-party access token are
 configuration; the transport is injectable, and the client holds no key that can
 decrypt a participant's payload — it only ever moves ciphertext and commitments.
 Request and response shapes follow the published JSON Ledger API reference and were
-additionally verified against a live Canton sandbox.
+additionally verified against a live Canton ledger — a local sandbox in development,
+and the Canton DevNet validator behind the hosted demo.
 
 ## Model bindings
 

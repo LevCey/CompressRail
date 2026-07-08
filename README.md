@@ -8,12 +8,13 @@ the cycle, ever seeing another participant's positions.
 
 **Live demo:** [demo.compressrail.com](https://demo.compressrail.com) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com)
 
-> **Status:** early-stage MVP for the Encode "Build on Canton" hackathon (June–July 2026). The Daml
-> model, the off-ledger client, and the demo/landing/docs sites are built and verified against a local
-> Canton sandbox — including live runs of the atomic compression cycle, selective disclosure, and the
-> operator-blindness check the demo's privacy matrix and "try to cheat" control drive. See
-> [Roadmap](#roadmap) for what is not yet built (notably, running across separate participant nodes).
-> Not audited. Not for production use.
+> **Status:** early-stage MVP for the Encode "Build on Canton" hackathon (June–July 2026). The demo,
+> landing, and docs sites are live, and the demo runs **against our own Canton DevNet validator** —
+> real transactions through the DevNet global synchronizer, including the atomic compression cycle,
+> selective disclosure, and the operator-blindness check the privacy matrix and "try to cheat" control
+> drive (see [Verify the live deployment](#verify-the-live-deployment)). A local Canton sandbox is used
+> only for development and tests. See [Roadmap](#roadmap) for what is not yet built (notably, running
+> across separate participant nodes). Not audited. Not for production use.
 
 ## Verify the live deployment
 
@@ -151,7 +152,7 @@ demo/      Demo application: party selection and the per-party views, each rende
            from that party's own ledger projection
 landing/   Landing site
 docs/      Native public documentation
-deploy/    Local Canton sandbox script; a multi-node topology is on the roadmap
+deploy/    Local Canton sandbox script for development; the hosted demo runs on DevNet
 ```
 
 Code comments reference ids from the project's internal requirements tracker (e.g. `R8.6`, `D8`,
@@ -205,7 +206,7 @@ This is a hackathon MVP focused on the privacy architecture, not a production co
 
 ## Roadmap
 
-- Running the model across separate participant nodes rather than one sandbox participant, to harden
+- Running the model across separate participant nodes rather than a single participant node, to harden
   the cross-node privacy proof.
 - Operator-blind matching via per-node multi-party computation, which also removes the operator's
   visibility of cycle topology.
