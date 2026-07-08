@@ -305,3 +305,17 @@ describe("LedgerClient party management", () => {
     expect(parties.map((p) => p.party)).toEqual(["Alice::1220", "Op::1220"]);
   });
 });
+
+describe("LedgerClient.version", () => {
+  it("returns the participant's reported version via GET /v2/version", async () => {
+    const { transport, calls } = mock({
+      "/v2/version": { status: 200, body: { version: "3.5.4", features: {} } },
+    });
+    const client = new LedgerClient({ transport, token: "jwt-A" });
+
+    const v = await client.version();
+
+    expect(v).toBe("3.5.4");
+    expect(calls[0]).toMatchObject({ method: "GET", path: "/v2/version", token: "jwt-A" });
+  });
+});

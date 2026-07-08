@@ -13,7 +13,7 @@ import {
   exerciseCommand,
   type SubmitOptions,
 } from "./requests";
-import { assertOk, parseActiveContracts, parseAllocatedParty, parseExerciseResult, parseLedgerEnd, parseParties, parseUpdates } from "./parse";
+import { assertOk, parseActiveContracts, parseAllocatedParty, parseExerciseResult, parseLedgerEnd, parseParties, parseUpdates, parseVersion } from "./parse";
 import type { Command, CreatedEvent, ExerciseResult, LedgerUpdate, PartyDetails, TemplateId } from "./types";
 import type { Transport } from "./transport";
 
@@ -75,6 +75,14 @@ export class LedgerClient {
     const res = await this.transport.get("/v2/state/ledger-end", this.token);
     assertOk(res);
     return parseLedgerEnd(res.body).offset;
+  }
+
+  // The participant's reported Ledger API version. Also a lightweight liveness
+  // probe: a 200 means the ledger is reachable through the proxy.
+  async version(): Promise<string> {
+    const res = await this.transport.get("/v2/version", this.token);
+    assertOk(res);
+    return parseVersion(res.body).version;
   }
 
   async allocateParty(partyIdHint: string): Promise<string> {

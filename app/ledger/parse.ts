@@ -158,3 +158,12 @@ export function parseActiveContracts(body: unknown): CreatedEvent[] {
   }
   return out;
 }
+
+// The participant's reported version from GET /v2/version.
+export function parseVersion(body: unknown): { readonly version: string } {
+  const version = (body as { version?: unknown }).version;
+  if (typeof version !== "string") {
+    throw new Error(`unexpected /v2/version response: ${JSON.stringify(body)}`);
+  }
+  return { version };
+}

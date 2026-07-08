@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TerminalShell } from "@/components/shell";
+import type { ConnectionState } from "@/components/shell/status-bar";
 import { PartySelector, PARTY_OPTIONS, type DemoRole } from "@/components/party-selector";
 import { CompressionConsole } from "@/components/compression-console";
 import { LedgerXRay } from "@/components/ledger-xray";
@@ -9,7 +10,7 @@ import { PrivacyMatrixScoreboard } from "@/components/privacy-matrix-scoreboard"
 import { TryToCheat } from "@/components/try-to-cheat";
 import { LiveCounter } from "@/components/live-counter";
 import { DemoSessionProvider, useDemoSession } from "@/lib/demo-session";
-import { LEDGER_URL } from "@/lib/ledger";
+import { createDemoLedgerClient } from "@/lib/ledger";
 
 const NAV_ITEMS = [
   { id: "console", label: "Compression Console" },
@@ -42,6 +43,37 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
   const option = PARTY_OPTIONS.find((o) => o.role === role);
   const partyId = roleToPartyId(role, session);
 
+  // The status bar is measured, not asserted: probe the live ledger for a version on
+  // mount and periodically, so a real outage shows as disconnected rather than a
+  // hardcoded "connected".
+  const [connection, setConnection] = useState<ConnectionState>("connecting");
+  const [ledgerVersion, setLedgerVersion] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const probe = async () => {
+      try {
+        const v = await createDemoLedgerClient().version();
+        if (!cancelled) {
+          setLedgerVersion(v);
+          setConnection("connected");
+        }
+      } catch {
+        if (!cancelled) setConnection("disconnected");
+      }
+    };
+    void probe();
+    const id = setInterval(() => void probe(), 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  const network = ledgerVersion ? `Canton DevNet · Ledger API ${ledgerVersion}` : "Canton DevNet";
+  const cycleStatus = session.lastCycle
+    ? `Cycle executed — ${session.lastCycle.replacementLegCount} replacement legs`
+    : "No cycle open";
+
   return (
     <TerminalShell
       partyLabel={option?.label ?? role}
@@ -50,9 +82,9 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
       navItems={NAV_ITEMS}
       activeNavId={activeNav}
       onSelectNav={setActiveNav}
-      connection="connected"
-      network={LEDGER_URL}
-      cycleStatus="No cycle open"
+      connection={connection}
+      network={network}
+      cycleStatus={cycleStatus}
     >
       {session.matrixParties && (
         <div className="mb-4">
