@@ -61,7 +61,8 @@ export function CompressionConsole() {
             <p className="text-xs text-muted">
               Runs an offsetting three-party ring end to end against the live ledger:
               real encryption, a real per-node risk check, the real matching
-              algorithm, and the atomic execute.
+              algorithm, and the atomic execute. Runs live against Canton DevNet — a
+              full cycle takes under a minute.
             </p>
           </div>
           <button

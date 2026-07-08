@@ -15,6 +15,24 @@ the cycle, ever seeing another participant's positions.
 > [Roadmap](#roadmap) for what is not yet built (notably, running across separate participant nodes).
 > Not audited. Not for production use.
 
+## Verify the live deployment
+
+The hosted demo runs against our own Canton DevNet validator (not a local sandbox). You can confirm it
+from outside:
+
+```
+curl https://demo.compressrail.com/ledger/v2/version
+```
+
+That is the live participant's JSON Ledger API. Every action in the demo — the compression cycle, the
+operator-blindness check, the "try to cheat" control — submits real transactions through the DevNet
+global synchronizer. The end-to-end suite passes against this same public endpoint (note: it allocates
+parties on the validator):
+
+```
+cd app && E2E_LEDGER_URL=https://demo.compressrail.com/ledger npm run e2e
+```
+
 ## The problem
 
 Multilateral portfolio compression reduces the gross notional and the trapped initial margin sitting in
@@ -135,6 +153,9 @@ landing/   Landing site
 docs/      Native public documentation
 deploy/    Local Canton sandbox script; a multi-node topology is on the roadmap
 ```
+
+Code comments reference ids from the project's internal requirements tracker (e.g. `R8.6`, `D8`,
+`I-5`) — traceability to the spec, not dangling references.
 
 ## Getting started
 
