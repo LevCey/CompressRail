@@ -55,7 +55,15 @@ export function LedgerXRay({ party, partyLabel }: LedgerXRayProps) {
       <div className="flex-1 rounded-md border border-border bg-surface">
         <div className="flex items-center justify-between border-b border-border p-4">
           <div>
-            <h2 className="text-sm font-medium text-foreground">Ledger activity — {partyLabel}</h2>
+            <h2 className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <span>Ledger activity — {partyLabel}</span>
+              {state.status === "done" && (
+                <span className="flex items-center gap-1 rounded border border-border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted">
+                  <span className="h-1 w-1 animate-pulse rounded-full bg-accent-live" />
+                  {flat.length} events · Live
+                </span>
+              )}
+            </h2>
             <p className="text-xs text-muted">
               Read directly from this party&apos;s own projection. Economic fields
               render exactly as they exist on-ledger.

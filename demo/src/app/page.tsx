@@ -113,6 +113,7 @@ function Console({
     <TerminalShell
       partyLabel={option?.label ?? role}
       partyRole={option?.roleLabel ?? "Party"}
+      partyId={partyId}
       onSwitchParty={onSwitchParty}
       navItems={NAV_ITEMS}
       activeNavId={activeNav}

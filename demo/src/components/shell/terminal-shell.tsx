@@ -11,6 +11,7 @@ import { StatusBar, type ConnectionState } from "./status-bar";
 export interface TerminalShellProps {
   readonly partyLabel: string;
   readonly partyRole: string;
+  readonly partyId?: string | null;
   readonly onSwitchParty?: () => void;
   readonly navItems: readonly SidebarItem[];
   readonly activeNavId: string;
@@ -24,6 +25,7 @@ export interface TerminalShellProps {
 export function TerminalShell({
   partyLabel,
   partyRole,
+  partyId,
   onSwitchParty,
   navItems,
   activeNavId,
@@ -36,7 +38,7 @@ export function TerminalShell({
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <NoticeBanner />
-      <PartyHeader partyLabel={partyLabel} partyRole={partyRole} onSwitchParty={onSwitchParty} />
+      <PartyHeader partyLabel={partyLabel} partyRole={partyRole} partyId={partyId} onSwitchParty={onSwitchParty} />
       <div className="flex flex-1">
         <Sidebar items={navItems} activeId={activeNavId} onSelect={onSelectNav} />
         <main className="flex-1 overflow-x-auto p-6">{children}</main>
