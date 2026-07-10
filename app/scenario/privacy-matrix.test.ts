@@ -116,15 +116,17 @@ describe("computePrivacyMatrix", () => {
     expect(matrix.rows.every((r) => r.regulator === "unknown")).toBe(true);
   });
 
-  it("fills the regulator column from the regulator's own projection when a trade is disclosed to it", async () => {
+  it("fills the regulator column from its own projection — scoped to A's trade, not B's separate one", async () => {
     const aliceBob = createBilateralTrade({ cptyA: "A", cptyB: "B", tradeRef: "AB", terms: "c", commitment: "h", auditors: ["Reg"] });
-    const client = mockClient({ A: { trades: [aliceBob] }, B: { trades: [aliceBob] }, Op: {}, Reg: { trades: [aliceBob] } });
-    const matrix = await computePrivacyMatrix(client, { operator: "Op", alice: "A", bob: "B", regulator: "Reg" });
+    const bobCarol = createBilateralTrade({ cptyA: "B", cptyB: "C", tradeRef: "BC", terms: "c2", commitment: "h2", auditors: [] });
+    const client = mockClient({ A: { trades: [aliceBob] }, B: { trades: [aliceBob, bobCarol] }, Op: {}, Reg: { trades: [aliceBob] } });
+    const matrix = await computePrivacyMatrix(client, { operator: "Op", alice: "A", bob: "B", carol: "C", regulator: "Reg" });
 
-    // The regulator sees Alice's disclosed trade (scoped), but not Bob's own terms,
-    // and is not an observer on any cycle.
+    // The regulator sees Alice's disclosed A-B trade (scoped) but NOT Bob's separate
+    // B-C trade — a measured no against a real existing trade, not a vacuous one.
     expect(matrix.rows.find((r) => r.label === "A's economic terms")!.regulator).toBe("scoped");
     expect(matrix.rows.find((r) => r.label === "B's economic terms")!.regulator).toBe("no");
+    expect(matrix.rows.find((r) => r.label === "B's economic terms")!.participantB).toBe("yes"); // B genuinely holds 2 trades
     expect(matrix.rows.find((r) => r.label === "Cycle topology and validity")!.regulator).toBe("no");
     expect(matrix.regulatorTradeCount).toBe(1);
   });

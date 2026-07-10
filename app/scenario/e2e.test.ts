@@ -14,16 +14,19 @@ describe.skipIf(!url)("operator-blindness on a live Canton ledger", () => {
     const client = new LedgerClient({ transport: retryingTransport(fetchTransport(url as string)), token: "" });
     const r = await runOperatorBlindnessScenario(client);
 
-    expect(r.aliceTradeCount).toBeGreaterThanOrEqual(1);
-    expect(r.bobTradeCount).toBeGreaterThanOrEqual(1);
+    expect(r.aliceTradeCount).toBe(1); // A–B
+    expect(r.bobTradeCount).toBe(2); // A–B and B–C
+    expect(r.carolTradeCount).toBe(1); // B–C
     expect(r.operatorTradeCount).toBe(0);
     expect(r.onLedgerTermsAreCiphertext).toBe(true);
     expect(r.aliceDecryptedTerms).toMatchObject({ instrument: "IRS" });
     // Alice's home regulator has a real scoped view: it sees and can decrypt exactly
-    // her disclosed trade, from its own projection.
+    // her disclosed A–B trade, and NOT Bob's separate B–C trade — a measured no.
     expect(r.regulatorSeesAliceTrade).toBe(true);
+    expect(r.regulatorSeesBobCarolTrade).toBe(false);
     expect(r.regulatorTradeCount).toBe(1);
     expect(r.parties.regulator).toBeTruthy();
+    expect(r.parties.carol).toBeTruthy();
   }, 60_000);
 });
 

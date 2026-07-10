@@ -31,6 +31,9 @@ export interface PrivacyMatrixParties {
   readonly alice: string;
   readonly bob: string;
   readonly operator: string;
+  // A third participant (Carol), if the seed scenario allocated one — used by the
+  // demo's participant-C view; the matrix columns are A/B/operator/regulator.
+  readonly carol?: string;
   // Alice's home regulator, if a scenario allocated one and disclosed a trade to it.
   readonly regulator?: string;
 }
