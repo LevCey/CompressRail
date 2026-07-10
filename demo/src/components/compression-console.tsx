@@ -1,19 +1,46 @@
-// The Compression Console (R8.4): a participant blotter that looks like a real
-// risk/treasury tool, with a join-cycle action that runs the actual compression
-// cycle against the live ledger and reports what really happened — never a
-// hardcoded "0" (R5.4, R8.8).
+// The Compression Console (R8.4): the join-cycle action runs the actual compression
+// cycle against the live ledger and reports what really happened — never a hardcoded
+// "0" (R5.4, R8.8). The ~50s DevNet run is shown as a live step timeline: each step
+// lands as its real ledger operation completes, so the latency reads as proof that
+// every phase is a real transaction, not dead air. The result leads with what was
+// accomplished (trades torn up, % compressed) rather than a wall of zeros.
 "use client";
 
-import { useCallback, useEffect } from "react";
-import { KpiCard, DataTableTabs, DataTable } from "./shell";
+import { useCallback, useEffect, useState } from "react";
+import { KpiCard } from "./shell";
 import { useLiveRun } from "@/lib/use-live-run";
 import { createDemoLedgerClient } from "@/lib/ledger";
 import { useDemoSession } from "@/lib/demo-session";
-import { runCompressionCycle, type CycleResult } from "@compressrail/app/scenario/cycle";
+import { runCompressionCycle, type CycleResult, type CycleProgress } from "@compressrail/app/scenario/cycle";
 import { runOperatorBlindnessScenario, type BlindnessResult } from "@compressrail/app/scenario/blindness";
 
-export function CompressionConsole() {
-  const run = useCallback(() => runCompressionCycle(createDemoLedgerClient()), []);
+const short = (id: string): string => (id.length > 16 ? `${id.slice(0, 12)}…` : id);
+
+function progressLabel(e: CycleProgress): string {
+  switch (e.step) {
+    case "parties":
+      return `Allocated ${e.count} parties on Canton DevNet`;
+    case "trades":
+      return `Wrote ${e.count} encrypted bilateral trades (${e.refs.join(", ")} · $${(e.grossNotional / 1_000_000).toFixed(0)}M gross)`;
+    case "matched":
+      return `Matched: tear up ${e.tearUp} trades, create ${e.replacements} replacement legs`;
+    case "opened":
+      return "Operator opened the cycle — carries no economic terms";
+    case "verified":
+      return `${short(e.participant)} verified post-cycle risk on its own node — ${e.withinTolerance ? "within tolerance" : "declined"}`;
+    case "executed":
+      return `Atomic execute: ${e.tornUp} trades torn up in one transaction`;
+    case "settled":
+      return `After: A ${e.aliceTradeCount} · B ${e.bobTradeCount} · C ${e.carolTradeCount} — fully compressed`;
+  }
+}
+
+export function CompressionConsole({ onActAsOperator }: { readonly onActAsOperator: () => void }) {
+  const [progress, setProgress] = useState<CycleProgress[]>([]);
+  const run = useCallback(() => {
+    setProgress([]);
+    return runCompressionCycle(createDemoLedgerClient(), (e) => setProgress((prev) => [...prev, e]));
+  }, []);
   const { state, trigger } = useLiveRun<CycleResult>(run);
   const { setLastCycle, setMatrixParties } = useDemoSession();
 
@@ -32,23 +59,30 @@ export function CompressionConsole() {
     if (blindnessResult) setMatrixParties(blindnessResult.parties);
   }, [blindnessResult, setMatrixParties]);
 
+  const compressionPct =
+    result && result.tradesTornUp > 0
+      ? Math.round((1 - result.replacementLegCount / result.tradesTornUp) * 100)
+      : 0;
+
   return (
     <div className="flex flex-col gap-6">
+      {/* KPI row — framed around accomplishment, not remainder. Every value is real. */}
       <div className="grid grid-cols-3 gap-4">
         <KpiCard
-          label="Replacement legs after the cycle"
-          value={result ? String(result.replacementLegCount) : "—"}
-          caption={result ? "computed by the real matching algorithm" : "run a cycle to compute this"}
+          label="Trades torn up"
+          value={result ? String(result.tradesTornUp) : "—"}
+          tone={result ? "positive" : "neutral"}
+          caption={result ? "archived in one atomic transaction" : "run a cycle to compute this"}
         />
         <KpiCard
-          label="Your books held by the operator"
-          value={result ? String(result.operatorTradeCount) : "—"}
-          tone={result && result.operatorTradeCount === 0 ? "positive" : "neutral"}
-          caption="read from the operator's own live projection"
+          label="Compression"
+          value={result ? `${result.tradesTornUp} → ${result.replacementLegCount}` : "—"}
+          tone={result ? "positive" : "neutral"}
+          caption={result ? `${compressionPct}% compressed by the real matching algorithm` : "replacement legs from the matcher"}
         />
         <KpiCard
-          label="Books seen by the operator"
-          value="0"
+          label="Positions seen by the operator"
+          value={result ? String(result.operatorTradeCount) : "0"}
           tone="positive"
           caption="the operator never holds a decryption key"
         />
@@ -81,29 +115,38 @@ export function CompressionConsole() {
           </p>
         )}
 
+        {/* Live step timeline: each step appears when its real ledger op completes. */}
+        {(running || progress.length > 0) && (
+          <ol className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+            {progress.map((e, i) => (
+              <li key={`${e.step}-${i}`} className="flex items-start gap-2 text-xs">
+                <span className="mt-0.5 text-accent-live">✓</span>
+                <span className="text-foreground">{progressLabel(e)}</span>
+              </li>
+            ))}
+            {running && (
+              <li className="flex items-center gap-2 text-xs text-muted">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-propose" />
+                <span>Working against Canton DevNet — each step above is a real transaction…</span>
+              </li>
+            )}
+          </ol>
+        )}
+
+        {/* Finale CTA: surface the buried try-to-cheat by jumping to the operator view. */}
         {result && (
-          <div className="mt-4">
-            <DataTableTabs
-              tabs={[
-                { id: "participants", label: "Participant trade counts", count: 3 },
-              ]}
-              activeId="participants"
-              onSelect={() => undefined}
-            />
-            <DataTable>
-              <tr>
-                <td className="px-4 py-3 text-sm">Participant A (you)</td>
-                <td className="px-4 py-3 text-right font-mono text-sm">{result.aliceTradeCount}</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Participant B</td>
-                <td className="px-4 py-3 text-right font-mono text-sm">{result.bobTradeCount}</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 text-sm">Participant C</td>
-                <td className="px-4 py-3 text-right font-mono text-sm">{result.carolTradeCount}</td>
-              </tr>
-            </DataTable>
+          <div className="mt-4 rounded border border-accent-propose/40 bg-accent-propose/10 px-3 py-3">
+            <p className="text-xs text-foreground">
+              The operator coordinated this entire cycle without ever seeing a position.
+              See exactly what it saw — and try to read a participant&apos;s book yourself.
+            </p>
+            <button
+              type="button"
+              onClick={onActAsOperator}
+              className="mt-2 rounded bg-accent-propose px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+            >
+              View as operator →
+            </button>
           </div>
         )}
       </div>

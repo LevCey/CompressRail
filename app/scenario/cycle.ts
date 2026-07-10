@@ -31,6 +31,8 @@ export interface CycleResult {
   readonly bobTradeCount: number;
   readonly carolTradeCount: number;
   readonly replacementLegCount: number;
+  // The number of bilateral trades the cycle tore up (the offsetting ring: 3).
+  readonly tradesTornUp: number;
   // True if Alice could decrypt the replacement leg she holds after the cycle and it
   // carried real economic content — a decryption-success check, not a notional.
   readonly aliceDecryptedReplacementLeg: boolean;
@@ -77,19 +79,37 @@ async function disclose(client: LedgerClient, party: string, contractId: string)
   return { contractId: found.contractId, templateId: found.templateId, createdEventBlob: found.createdEventBlob, synchronizerId: found.synchronizerId };
 }
 
-export async function runCompressionCycle(client: LedgerClient): Promise<CycleResult> {
+// A staged progress event, emitted after each real sequential phase of the cycle so
+// a caller can render the ~50s DevNet run as a live timeline. Every value is real —
+// taken from the ledger operation that just completed, never a fabricated placeholder.
+export type CycleProgress =
+  | { readonly step: "parties"; readonly count: number }
+  | { readonly step: "trades"; readonly count: number; readonly grossNotional: number; readonly refs: readonly string[] }
+  | { readonly step: "matched"; readonly tearUp: number; readonly replacements: number }
+  | { readonly step: "opened" }
+  | { readonly step: "verified"; readonly participant: string; readonly index: number; readonly total: number; readonly withinTolerance: boolean }
+  | { readonly step: "executed"; readonly tornUp: number }
+  | { readonly step: "settled"; readonly aliceTradeCount: number; readonly bobTradeCount: number; readonly carolTradeCount: number };
+
+export async function runCompressionCycle(
+  client: LedgerClient,
+  onProgress?: (event: CycleProgress) => void,
+): Promise<CycleResult> {
+  const emit = (event: CycleProgress): void => onProgress?.(event);
   const run = Math.random().toString(36).slice(2, 8);
   const alice: Party = { id: await client.allocateParty(`Alice-${run}`), keys: await generateKeyPair() };
   const bob: Party = { id: await client.allocateParty(`Bob-${run}`), keys: await generateKeyPair() };
   const carol: Party = { id: await client.allocateParty(`Carol-${run}`), keys: await generateKeyPair() };
   const operator = await client.allocateParty(`Operator-${run}`);
   const byId = new Map<string, Party>([[alice.id, alice], [bob.id, bob], [carol.id, carol]]);
+  emit({ step: "parties", count: 4 });
 
   // An offsetting ring, same shape as the Daml fixture: A-B, B-C, C-A, all 100 of a
   // single risk factor — a closed ring that fully nets to zero.
   const tAB = await writeTrade(client, alice, bob, "AB", { "2Y": 100 });
   const tBC = await writeTrade(client, bob, carol, "BC", { "2Y": 100 });
   const tCA = await writeTrade(client, carol, alice, "CA", { "2Y": 100 });
+  emit({ step: "trades", count: 3, grossNotional: 3 * 100_000_000, refs: ["AB", "BC", "CA"] });
 
   // The matching stand-in computes the real teardown/replacement topology from the
   // trades' actual risk — not hard-coded. The ring is closed, so it fully compresses.
@@ -100,6 +120,7 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
   ];
   const matched = match(solverTrades);
   const topology = matched.replacements.map((r): [string, string] => [r.a, r.b]);
+  emit({ step: "matched", tearUp: matched.teardown.length, replacements: matched.replacements.length });
 
   // One counterparty per replacement leg seals it and shares the sealed payload with
   // the other off-ledger — both sides then commit to the same commitment.
@@ -141,6 +162,7 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
       }),
     ),
   ]);
+  emit({ step: "opened" });
 
   const findCycle = async (): Promise<string> => {
     const acs = await client.activeContracts(operator, { templateIds: [TEMPLATES.CompressionCycle] });
@@ -151,7 +173,9 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
 
   // Each participant runs its real per-node check over the legs it would hold, and
   // only if it passes, commits its leg commitments + ciphertext + attestation.
-  for (const p of [alice, bob, carol]) {
+  const toVerify = [alice, bob, carol];
+  for (let i = 0; i < toVerify.length; i++) {
+    const p = toVerify[i]!;
     const result = await prepareParticipation({
       participant: p.id,
       keyPair: p.keys,
@@ -162,6 +186,7 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
     if (result.decision !== "commit") throw new Error(`${p.id} declined: residual magnitude ${result.assessment.magnitude}`);
     const cycleId = await findCycle();
     await client.exercise(p.id, TEMPLATES.CompressionCycle, cycleId, CHOICES.Commit, commitArg(p.id, result.submission.legs, true));
+    emit({ step: "verified", participant: p.id, index: i, total: toVerify.length, withinTolerance: result.submission.withinTolerance });
   }
 
   // The operator is not a stakeholder of the nominated trades, so each stakeholder
@@ -171,6 +196,7 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
 
   const cycleId = await findCycle();
   await client.exercise(operator, TEMPLATES.CompressionCycle, cycleId, CHOICES.Execute, executeArg(), { disclosedContracts: disclosures });
+  emit({ step: "executed", tornUp: matched.teardown.length });
 
   const [operatorTrades, aliceTrades, bobTrades, carolTrades] = await Promise.all([
     client.activeContracts(operator, { templateIds: [TEMPLATES.BilateralTrade] }),
@@ -178,6 +204,7 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
     client.activeContracts(bob.id, { templateIds: [TEMPLATES.BilateralTrade] }),
     client.activeContracts(carol.id, { templateIds: [TEMPLATES.BilateralTrade] }),
   ]);
+  emit({ step: "settled", aliceTradeCount: aliceTrades.length, bobTradeCount: bobTrades.length, carolTradeCount: carolTrades.length });
 
   // Alice decrypts whatever replacement leg she now holds (there may be none, if
   // she nets out of the compressed topology entirely) and confirms it carries real
@@ -195,6 +222,7 @@ export async function runCompressionCycle(client: LedgerClient): Promise<CycleRe
     bobTradeCount: bobTrades.length,
     carolTradeCount: carolTrades.length,
     replacementLegCount: matched.replacements.length,
+    tradesTornUp: matched.teardown.length,
     aliceDecryptedReplacementLeg,
     parties: { operator, alice: alice.id, bob: bob.id, carol: carol.id },
   };

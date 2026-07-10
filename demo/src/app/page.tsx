@@ -37,8 +37,19 @@ function roleToPartyId(role: DemoRole, session: ReturnType<typeof useDemoSession
   }
 }
 
-function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly onSwitchParty: () => void }) {
-  const [activeNav, setActiveNav] = useState("console");
+function Console({
+  role,
+  activeNav,
+  onSelectNav,
+  onSwitchParty,
+  onActAsOperator,
+}: {
+  readonly role: DemoRole;
+  readonly activeNav: string;
+  readonly onSelectNav: (id: string) => void;
+  readonly onSwitchParty: () => void;
+  readonly onActAsOperator: () => void;
+}) {
   const session = useDemoSession();
   const option = PARTY_OPTIONS.find((o) => o.role === role);
   const partyId = roleToPartyId(role, session);
@@ -81,7 +92,7 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
       onSwitchParty={onSwitchParty}
       navItems={NAV_ITEMS}
       activeNavId={activeNav}
-      onSelectNav={setActiveNav}
+      onSelectNav={onSelectNav}
       connection={connection}
       network={network}
       cycleStatus={cycleStatus}
@@ -91,7 +102,7 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
           <LiveCounter parties={session.matrixParties} />
         </div>
       )}
-      {activeNav === "console" && <CompressionConsole />}
+      {activeNav === "console" && <CompressionConsole onActAsOperator={onActAsOperator} />}
       {activeNav === "ledger" &&
         (partyId ? (
           <div className="flex flex-col gap-4">
@@ -132,10 +143,29 @@ function Console({ role, onSwitchParty }: { readonly role: DemoRole; readonly on
 
 export default function Home() {
   const [role, setRole] = useState<DemoRole | null>(null);
+  const [activeNav, setActiveNav] = useState("console");
 
   return (
     <DemoSessionProvider>
-      {role ? <Console role={role} onSwitchParty={() => setRole(null)} /> : <PartySelector onSelect={setRole} />}
+      {role ? (
+        <Console
+          role={role}
+          activeNav={activeNav}
+          onSelectNav={setActiveNav}
+          onSwitchParty={() => setRole(null)}
+          onActAsOperator={() => {
+            setRole("operator");
+            setActiveNav("ledger");
+          }}
+        />
+      ) : (
+        <PartySelector
+          onSelect={(r) => {
+            setRole(r);
+            setActiveNav("console");
+          }}
+        />
+      )}
     </DemoSessionProvider>
   );
 }
