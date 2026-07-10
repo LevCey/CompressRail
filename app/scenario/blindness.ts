@@ -28,6 +28,13 @@ export interface BlindnessResult {
   readonly regulatorSeesAliceTrade: boolean;
   // Must be false: the regulator is scoped to A–B and cannot see Bob's separate B–C trade.
   readonly regulatorSeesBobCarolTrade: boolean;
+  // In-session decryption material for the demo blotter: each party's key pair and
+  // each trade's wrapped content keys, keyed by trade ref. Held in memory only
+  // (demo-grade, R7.3); never persisted.
+  readonly secrets: {
+    readonly keys: Record<string, KeyPair>;
+    readonly wrappedByRef: Record<string, Record<string, string>>;
+  };
   readonly parties: {
     readonly operator: string;
     readonly alice: string;
@@ -131,6 +138,10 @@ export async function runOperatorBlindnessScenario(client: LedgerClient): Promis
     onLedgerTermsAreCiphertext,
     regulatorSeesAliceTrade,
     regulatorSeesBobCarolTrade,
+    secrets: {
+      keys: { [alice]: aliceKeys, [bob]: bobKeys, [carol]: carolKeys, [regulator]: regulatorKeys },
+      wrappedByRef: { AB: ab.wrappedKeys, BC: bc.wrappedKeys },
+    },
     parties: { operator, alice, bob, carol, regulator },
   };
 }

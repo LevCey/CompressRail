@@ -15,7 +15,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { CycleResult } from "@compressrail/app/scenario/cycle";
-import { runOperatorBlindnessScenario } from "@compressrail/app/scenario/blindness";
+import { runOperatorBlindnessScenario, type BlindnessResult } from "@compressrail/app/scenario/blindness";
 import type { PrivacyMatrixParties } from "@compressrail/app/scenario/privacy-matrix";
 import { TEMPLATES } from "@compressrail/app/model";
 import { createDemoLedgerClient } from "./ledger";
@@ -30,6 +30,10 @@ export interface DemoSession {
   readonly matrixParties: PrivacyMatrixParties | null;
   readonly setMatrixParties: (parties: PrivacyMatrixParties) => void;
   readonly seedStatus: SeedStatus;
+  // In-session decryption material from the seed, for the blotter. Memory only; null
+  // after a restore (party ids are persisted, keys are not) — the blotter then falls
+  // back to showing ciphertext.
+  readonly seedSecrets: BlindnessResult["secrets"] | null;
   readonly reseed: () => void;
 }
 
@@ -75,6 +79,7 @@ export function DemoSessionProvider({ children }: { readonly children: ReactNode
   const [lastCycle, setLastCycle] = useState<CycleResult | null>(null);
   const [matrixParties, setMatrixParties] = useState<PrivacyMatrixParties | null>(null);
   const [seedStatus, setSeedStatus] = useState<SeedStatus>("restoring");
+  const [seedSecrets, setSeedSecrets] = useState<BlindnessResult["secrets"] | null>(null);
   const [reseedNonce, setReseedNonce] = useState(0);
   const started = useRef(false);
 
@@ -110,6 +115,7 @@ export function DemoSessionProvider({ children }: { readonly children: ReactNode
         if (cancelled) return;
         saveStoredSeed(result.parties);
         setMatrixParties(result.parties);
+        setSeedSecrets(result.secrets);
         setSeedStatus("ready");
       } catch {
         if (!cancelled) setSeedStatus("error");
@@ -125,13 +131,14 @@ export function DemoSessionProvider({ children }: { readonly children: ReactNode
     started.current = false;
     clearStoredSeed();
     setMatrixParties(null);
+    setSeedSecrets(null);
     setSeedStatus("restoring");
     setReseedNonce((n) => n + 1);
   }, []);
 
   const value = useMemo(
-    () => ({ lastCycle, setLastCycle, matrixParties, setMatrixParties, seedStatus, reseed }),
-    [lastCycle, matrixParties, seedStatus, reseed],
+    () => ({ lastCycle, setLastCycle, matrixParties, setMatrixParties, seedStatus, seedSecrets, reseed }),
+    [lastCycle, matrixParties, seedStatus, seedSecrets, reseed],
   );
   return <DemoSessionContext.Provider value={value}>{children}</DemoSessionContext.Provider>;
 }

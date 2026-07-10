@@ -5,6 +5,7 @@ import { TerminalShell } from "@/components/shell";
 import type { ConnectionState } from "@/components/shell/status-bar";
 import { PartySelector, PARTY_OPTIONS, type DemoRole } from "@/components/party-selector";
 import { CompressionConsole } from "@/components/compression-console";
+import { Blotter } from "@/components/blotter";
 import { LedgerXRay } from "@/components/ledger-xray";
 import { PrivacyMatrixScoreboard } from "@/components/privacy-matrix-scoreboard";
 import { TryToCheat } from "@/components/try-to-cheat";
@@ -129,7 +130,12 @@ function Console({
       ) : (
         <SeedBanner status={session.seedStatus} onRetry={session.reseed} />
       )}
-      {activeNav === "console" && <CompressionConsole onActAsOperator={onActAsOperator} />}
+      {activeNav === "console" && (
+        <div className="flex flex-col gap-6">
+          <CompressionConsole onActAsOperator={onActAsOperator} />
+          {partyId && <Blotter party={partyId} partyLabel={option?.label ?? role} />}
+        </div>
+      )}
       {activeNav === "ledger" &&
         (partyId ? (
           <div className="flex flex-col gap-4">
