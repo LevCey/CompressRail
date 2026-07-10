@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { KpiCard } from "./shell";
+import { CompressionRing } from "./compression-ring";
 import { useLiveRun } from "@/lib/use-live-run";
 import { createDemoLedgerClient } from "@/lib/ledger";
 import { useDemoSession } from "@/lib/demo-session";
@@ -150,6 +151,8 @@ export function CompressionConsole({ onActAsOperator }: { readonly onActAsOperat
           </div>
         )}
       </div>
+
+      <CompressionRing result={result} />
 
       <div className="rounded-md border border-border bg-surface p-4">
         <div className="flex items-center justify-between">
