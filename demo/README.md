@@ -29,6 +29,14 @@ against the live ledger, never a simulated result. Requires a Canton JSON Ledger
 `NEXT_PUBLIC_LEDGER_URL` — the hosted demo uses our Canton DevNet validator; for local
 development it defaults to a sandbox at `http://localhost:7575` (see `../deploy`).
 
+On cold load the demo auto-seeds a small live book — A–B (disclosed to Alice's
+regulator) and B–C — so every party role has real content at first paint with zero
+clicks. The seed's party ids are persisted per-tab in `sessionStorage`, version-
+stamped and validated by a live read on load; on any failure (a DevNet reset, a
+missing party, a schema change) the store is cleared and the seed re-runs. This is
+demo-grade (R7.3): only party ids are persisted — the session encryption keys are
+held in memory only.
+
 ## Running
 
 With a Canton sandbox running (`../deploy/sandbox.sh`):

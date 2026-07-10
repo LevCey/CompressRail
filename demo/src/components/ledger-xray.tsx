@@ -5,7 +5,7 @@
 // from a hardcoded or simulated feed.
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DataTable } from "./shell";
 import { useLiveRun } from "@/lib/use-live-run";
 import { createDemoLedgerClient } from "@/lib/ledger";
@@ -40,6 +40,12 @@ export function LedgerXRay({ party, partyLabel }: LedgerXRayProps) {
   const run = useCallback(() => createDemoLedgerClient().updates(party), [party]);
   const { state, trigger } = useLiveRun<LedgerUpdate[]>(run);
   const [selected, setSelected] = useState<LedgerEvent | null>(null);
+
+  // Load the feed automatically on mount and whenever the acting party changes; the
+  // Refresh button re-runs it on demand. This keeps the X-ray zero-click.
+  useEffect(() => {
+    trigger();
+  }, [trigger]);
 
   const updates = state.status === "done" ? state.result : [];
   const flat = updates.flatMap((u) => u.events.map((e) => ({ update: u, event: e })));
