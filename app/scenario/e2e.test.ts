@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fetchTransport, LedgerClient } from "../ledger/index";
+import { fetchTransport, retryingTransport, LedgerClient } from "../ledger/index";
 import { runOperatorBlindnessScenario } from "./blindness";
 import { runCompressionCycle } from "./cycle";
 import { runSelectiveDisclosureScenario } from "./disclosure";
@@ -11,7 +11,7 @@ const url = process.env["E2E_LEDGER_URL"];
 
 describe.skipIf(!url)("operator-blindness on a live Canton ledger", () => {
   it("counterparties see the trade and can decrypt it; the operator's projection is empty", async () => {
-    const client = new LedgerClient({ transport: fetchTransport(url as string), token: "" });
+    const client = new LedgerClient({ transport: retryingTransport(fetchTransport(url as string)), token: "" });
     const r = await runOperatorBlindnessScenario(client);
 
     expect(r.aliceTradeCount).toBeGreaterThanOrEqual(1);
@@ -29,7 +29,7 @@ describe.skipIf(!url)("operator-blindness on a live Canton ledger", () => {
 
 describe.skipIf(!url)("the full compression cycle on a live Canton ledger", () => {
   it("tears up the offsetting ring atomically; the operator ends up a stakeholder of nothing", async () => {
-    const client = new LedgerClient({ transport: fetchTransport(url as string), token: "" });
+    const client = new LedgerClient({ transport: retryingTransport(fetchTransport(url as string)), token: "" });
     const r = await runCompressionCycle(client);
 
     // The offsetting ring nets to zero, so the matching stand-in fully compresses it
@@ -46,7 +46,7 @@ describe.skipIf(!url)("the full compression cycle on a live Canton ledger", () =
 
 describe.skipIf(!url)("selective regulator disclosure on a live Canton ledger", () => {
   it("scopes Regulator(A) to exactly Alice's trade, decryptable, with no transitive disclosure", async () => {
-    const client = new LedgerClient({ transport: fetchTransport(url as string), token: "" });
+    const client = new LedgerClient({ transport: retryingTransport(fetchTransport(url as string)), token: "" });
     const r = await runSelectiveDisclosureScenario(client);
 
     expect(r.regulatorASeesOwnTrade).toBe(true);

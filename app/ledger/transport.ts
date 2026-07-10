@@ -52,3 +52,37 @@ export function fetchTransport(baseUrl: string): Transport {
     },
   };
 }
+
+// Wraps a transport with a bounded retry on transient upstream failures (502/503/
+// 504). The DevNet participant intermittently returns 503 (backpressure), notably on
+// party allocation. Retrying these is safe: a 503 means the request was rejected
+// before processing, GETs are idempotent, and submit-and-wait carries a commandId in
+// its body so the ledger deduplicates a retried command. Backoff and sleep are
+// injectable so tests run without real delays.
+export function retryingTransport(
+  inner: Transport,
+  opts: {
+    readonly attempts?: number;
+    readonly backoffMs?: readonly number[];
+    readonly sleep?: (ms: number) => Promise<void>;
+    readonly onRetry?: (status: number, attempt: number) => void;
+  } = {},
+): Transport {
+  const attempts = opts.attempts ?? 3;
+  const backoffMs = opts.backoffMs ?? [1000, 3000];
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const retryable = new Set([502, 503, 504]);
+  const run = async (call: () => Promise<LedgerResponse>): Promise<LedgerResponse> => {
+    let res = await call();
+    for (let attempt = 1; attempt < attempts && retryable.has(res.status); attempt += 1) {
+      opts.onRetry?.(res.status, attempt);
+      await sleep(backoffMs[attempt - 1] ?? backoffMs[backoffMs.length - 1] ?? 3000);
+      res = await call();
+    }
+    return res;
+  };
+  return {
+    post: (path, body, token) => run(() => inner.post(path, body, token)),
+    get: (path, token) => run(() => inner.get(path, token)),
+  };
+}

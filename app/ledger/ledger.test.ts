@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { LedgerClient, LedgerError, type LedgerResponse, type Transport } from "./index";
+import { LedgerClient, LedgerError, retryingTransport, type LedgerResponse, type Transport } from "./index";
 
 interface Call {
   method: "POST" | "GET";
@@ -317,5 +317,58 @@ describe("LedgerClient.version", () => {
 
     expect(v).toBe("3.5.4");
     expect(calls[0]).toMatchObject({ method: "GET", path: "/v2/version", token: "jwt-A" });
+  });
+});
+
+describe("retryingTransport", () => {
+  function failThenOk(failStatus: number, failTimes: number): { transport: Transport; count: () => number } {
+    let calls = 0;
+    const reply = (): LedgerResponse => {
+      calls += 1;
+      return calls <= failTimes ? { status: failStatus, body: "backpressure" } : { status: 200, body: { ok: true } };
+    };
+    return {
+      transport: {
+        async post() {
+          return reply();
+        },
+        async get() {
+          return reply();
+        },
+      },
+      count: () => calls,
+    };
+  }
+
+  it("retries a transient 503 then succeeds, using an injected no-op sleep", async () => {
+    const { transport, count } = failThenOk(503, 1);
+    const sleeps: number[] = [];
+    const t = retryingTransport(transport, { sleep: async (ms) => void sleeps.push(ms) });
+
+    const res = await t.post("/v2/parties", { partyIdHint: "x" }, "");
+
+    expect(count()).toBe(2);
+    expect(res.status).toBe(200);
+    expect(sleeps).toEqual([1000]);
+  });
+
+  it("gives up after the max attempts and returns the last response", async () => {
+    const { transport, count } = failThenOk(503, 99);
+    const t = retryingTransport(transport, { sleep: async () => undefined });
+
+    const res = await t.get("/v2/state/ledger-end", "");
+
+    expect(count()).toBe(3);
+    expect(res.status).toBe(503);
+  });
+
+  it("does not retry a non-transient status", async () => {
+    const { transport, count } = failThenOk(404, 1);
+    const t = retryingTransport(transport, { sleep: async () => undefined });
+
+    const res = await t.post("/v2/parties", {}, "");
+
+    expect(count()).toBe(1);
+    expect(res.status).toBe(404);
   });
 });

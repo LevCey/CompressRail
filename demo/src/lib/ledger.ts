@@ -6,10 +6,12 @@
 // itself in the browser session.
 "use client";
 
-import { fetchTransport, LedgerClient } from "@compressrail/app/ledger";
+import { fetchTransport, retryingTransport, LedgerClient } from "@compressrail/app/ledger";
 
 export const LEDGER_URL = process.env.NEXT_PUBLIC_LEDGER_URL ?? "http://localhost:7575";
 
 export function createDemoLedgerClient(): LedgerClient {
-  return new LedgerClient({ transport: fetchTransport(LEDGER_URL), token: "" });
+  // The DevNet participant intermittently returns 503 (backpressure) on party
+  // allocation; a bounded retry keeps a live cycle from failing on a transient blip.
+  return new LedgerClient({ transport: retryingTransport(fetchTransport(LEDGER_URL)), token: "" });
 }

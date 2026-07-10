@@ -19,7 +19,7 @@ export type {
   IdentifierFilter,
 } from "./types";
 export type { Transport, LedgerResponse } from "./transport";
-export { fetchTransport } from "./transport";
+export { fetchTransport, retryingTransport } from "./transport";
 export {
   createCommand,
   exerciseCommand,
