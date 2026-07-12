@@ -54,6 +54,14 @@ function SeedBanner({ status, onRetry }: { readonly status: SeedStatus; readonly
       </div>
     );
   }
+  if (status === "restoring") {
+    return (
+      <div className="mb-4 flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-xs text-muted">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-propose" />
+        <span>Restoring your live session from Canton DevNet…</span>
+      </div>
+    );
+  }
   return (
     <div className="mb-4 flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-xs text-muted">
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-propose" />
@@ -132,8 +140,8 @@ function Console({
       )}
       {activeNav === "console" && (
         <div className="flex flex-col gap-6">
-          <CompressionConsole onActAsOperator={onActAsOperator} />
           {partyId && <Blotter party={partyId} partyLabel={option?.label ?? role} />}
+          <CompressionConsole onActAsOperator={onActAsOperator} />
         </div>
       )}
       {activeNav === "ledger" &&
