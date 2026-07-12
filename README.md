@@ -6,7 +6,7 @@ CompressRail lets a group of derivatives counterparties tear up offsetting bilat
 atomically redistribute counterparty exposure — without any party, including the operator that runs
 the cycle, ever seeing another participant's positions.
 
-**Live demo:** [demo.compressrail.com](https://demo.compressrail.com) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com)
+**Live demo:** [demo.compressrail.com](https://demo.compressrail.com) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com) · **Demo video:** [youtu.be/8XmG6ss5XuY](https://youtu.be/8XmG6ss5XuY)
 
 > **Status:** early-stage MVP for the Encode "Build on Canton" hackathon (June–July 2026). The demo,
 > landing, and docs sites are live, and the demo runs **against our own Canton DevNet validator** —
