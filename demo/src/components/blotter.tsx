@@ -100,8 +100,9 @@ export function Blotter({ party, partyLabel }: { readonly party: string; readonl
       )}
       {data && data.rows.length === 0 && (
         <p className="p-4 text-xs text-muted">
-          No trades in this party&apos;s projection — a stakeholder of nothing. This is the
-          operator&apos;s view: it coordinates cycles but holds no book.
+          {partyLabel.toLowerCase().includes("operator")
+            ? "No trades in the operator's own projection — it coordinates the cycle but holds no book. That is the point."
+            : "No active trades in this party's own projection right now."}
         </p>
       )}
       {data && data.rows.length > 0 && (
