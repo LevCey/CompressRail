@@ -20,18 +20,22 @@ const NAV_ITEMS = [
 ];
 
 function roleToPartyId(role: DemoRole, session: ReturnType<typeof useDemoSession>): string | null {
-  // After a compression cycle its (post-cycle) parties take precedence; otherwise the
-  // cold-load seed populates every role. The regulator only exists in the seed (the
-  // cycle allocates none).
+  // Participants render their own persistent seed book (the compression cycle runs on
+  // separate parties and does not replace it); the operator view reflects the cycle it
+  // coordinated. The regulator exists only in the seed.
   const cycle = session.lastCycle;
   const seed = session.matrixParties;
   switch (role) {
+    // Participants show their own persistent seed book; the compression cycle runs on
+    // its own separate parties and does not replace it.
     case "participant-a":
-      return cycle?.parties.alice ?? seed?.alice ?? null;
+      return seed?.alice ?? null;
     case "participant-b":
-      return cycle?.parties.bob ?? seed?.bob ?? null;
+      return seed?.bob ?? null;
     case "participant-c":
-      return cycle?.parties.carol ?? seed?.carol ?? null;
+      return seed?.carol ?? null;
+    // The operator view reflects the cycle it just coordinated (its CompressionCycle
+    // events), falling back to the seed operator before any cycle has run.
     case "operator":
       return cycle?.parties.operator ?? seed?.operator ?? null;
     case "regulator":
