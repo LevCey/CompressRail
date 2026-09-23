@@ -5,7 +5,7 @@
 # DevNet before deploying.
 sdk-version: 3.5.1
 name: compressrail
-version: 0.0.1
+version: 0.0.2
 source: .
 dependencies:
   - daml-prim

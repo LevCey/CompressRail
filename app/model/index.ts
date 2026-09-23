@@ -3,6 +3,7 @@ export type {
   LegCommit,
   Participation,
   BilateralTradeArgs,
+  TradeProposalArgs,
   ParticipantProfileArgs,
   CompressionCycleArgs,
   SelectiveAuditDisclosureArgs,
@@ -10,6 +11,7 @@ export type {
 export { TEMPLATES, CHOICES } from "./templates";
 export {
   createBilateralTrade,
+  createTradeProposal,
   createParticipantProfile,
   createCompressionCycle,
   createSelectiveAuditDisclosure,

@@ -1,0 +1,129 @@
+-- Propose-then-accept: creating a bilateral trade with one acting party per
+-- submission.
+--
+-- `BilateralTrade` has both counterparties as signatories. The fixture creates it
+-- with `actAs [a, b]`, which is only possible while both parties are hosted on the
+-- same participant — a ledger user cannot act as a party hosted on another node. The
+-- tests below never use more than one acting party in a single submission, which is
+-- the shape a cross-node flow is restricted to, and show that the resulting contract
+-- is the same one the single-submission path produces.
+module CompressRail.Test.CrossNode where
+
+import Daml.Script
+import CompressRail.Trade
+import DA.Assert ((===))
+
+-- The happy path: A proposes on its own authority, B accepts on its own authority,
+-- and the trade ends up signed by both.
+proposeThenAccept : Script ()
+proposeThenAccept = do
+  a <- allocateParty "ParticipantA"
+  b <- allocateParty "ParticipantB"
+  reg <- allocateParty "RegulatorA"
+
+  -- one acting party
+  prop <- submit a $ createCmd TradeProposal with
+            proposer = a; counterparty = b; tradeRef = "AB"
+            terms = "enc-ab"; commitment = "h-ab"; auditors = [reg]
+
+  -- the other acting party, separately
+  tid <- submit b $ exerciseCmd prop Accept
+
+  Some trade <- queryContractId a tid
+  trade.cptyA === a
+  trade.cptyB === b
+  trade.tradeRef === "AB"
+  trade.terms === "enc-ab"
+  trade.commitment === "h-ab"
+  trade.auditors === [reg]
+
+  -- both counterparties see it from their own projection; the auditor sees it as an
+  -- observer. Nobody needed to act for anybody else.
+  Some _ <- queryContractId b tid
+  Some _ <- queryContractId reg tid
+  pure ()
+
+-- The proposal alone does not bind the counterparty: it is signed by the proposer
+-- only, so no trade exists until acceptance.
+proposalDoesNotBindCounterparty : Script ()
+proposalDoesNotBindCounterparty = do
+  a <- allocateParty "ParticipantA"
+  b <- allocateParty "ParticipantB"
+
+  _ <- submit a $ createCmd TradeProposal with
+         proposer = a; counterparty = b; tradeRef = "AB"
+         terms = "enc-ab"; commitment = "h-ab"; auditors = []
+
+  trades <- query @BilateralTrade b
+  length trades === 0
+
+-- Only the counterparty may accept. The proposer cannot accept its own proposal,
+-- which is what stops one party from manufacturing a two-signatory contract alone.
+proposerCannotSelfAccept : Script ()
+proposerCannotSelfAccept = do
+  a <- allocateParty "ParticipantA"
+  b <- allocateParty "ParticipantB"
+
+  prop <- submit a $ createCmd TradeProposal with
+            proposer = a; counterparty = b; tradeRef = "AB"
+            terms = "enc-ab"; commitment = "h-ab"; auditors = []
+
+  submitMustFail a $ exerciseCmd prop Accept
+
+-- A proposal cannot name the same party on both sides.
+selfTradeRejected : Script ()
+selfTradeRejected = do
+  a <- allocateParty "ParticipantA"
+
+  submitMustFail a $ createCmd TradeProposal with
+    proposer = a; counterparty = a; tradeRef = "AA"
+    terms = "enc-aa"; commitment = "h-aa"; auditors = []
+
+-- Either side can end the proposal without a trade being created.
+declineAndWithdraw : Script ()
+declineAndWithdraw = do
+  a <- allocateParty "ParticipantA"
+  b <- allocateParty "ParticipantB"
+
+  declined <- submit a $ createCmd TradeProposal with
+                proposer = a; counterparty = b; tradeRef = "AB1"
+                terms = "enc-1"; commitment = "h-1"; auditors = []
+  submit b $ exerciseCmd declined Decline
+
+  withdrawn <- submit a $ createCmd TradeProposal with
+                 proposer = a; counterparty = b; tradeRef = "AB2"
+                 terms = "enc-2"; commitment = "h-2"; auditors = []
+  submit a $ exerciseCmd withdrawn Withdraw
+
+  -- neither route produced a trade
+  trades <- query @BilateralTrade a
+  length trades === 0
+
+  -- and the proposer cannot decline, nor the counterparty withdraw
+  open <- submit a $ createCmd TradeProposal with
+            proposer = a; counterparty = b; tradeRef = "AB3"
+            terms = "enc-3"; commitment = "h-3"; auditors = []
+  submitMustFail a $ exerciseCmd open Decline
+  submitMustFail b $ exerciseCmd open Withdraw
+
+-- The accepted trade behaves like any other: it can be nominated into a cycle by
+-- either counterparty, so the propose/accept path does not create a second class of
+-- trade the rest of the model has to special-case.
+acceptedTradeNominatesNormally : Script ()
+acceptedTradeNominatesNormally = do
+  operator <- allocateParty "Operator"
+  a <- allocateParty "ParticipantA"
+  b <- allocateParty "ParticipantB"
+
+  prop <- submit a $ createCmd TradeProposal with
+            proposer = a; counterparty = b; tradeRef = "AB"
+            terms = "enc-ab"; commitment = "h-ab"; auditors = []
+  tid <- submit b $ exerciseCmd prop Accept
+
+  nid <- submit b $ exerciseCmd tid NominateIntoCycle with
+           cycleId = "cycle-1"; operator; nominator = b
+
+  Some nom <- queryContractId operator nid
+  nom.tradeRef === "AB"
+  nom.commitment === "h-ab"
+  nom.operator === operator

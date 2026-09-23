@@ -10,6 +10,7 @@ import type {
   Participation,
   ParticipantProfileArgs,
   SelectiveAuditDisclosureArgs,
+  TradeProposalArgs,
 } from "./types";
 
 function encodeLegCommit(leg: LegCommit): Record<string, unknown> {
@@ -28,6 +29,17 @@ export function createBilateralTrade(a: BilateralTradeArgs): Record<string, unkn
   return {
     cptyA: a.cptyA,
     cptyB: a.cptyB,
+    tradeRef: a.tradeRef,
+    terms: a.terms,
+    commitment: a.commitment,
+    auditors: a.auditors,
+  };
+}
+
+export function createTradeProposal(a: TradeProposalArgs): Record<string, unknown> {
+  return {
+    proposer: a.proposer,
+    counterparty: a.counterparty,
     tradeRef: a.tradeRef,
     terms: a.terms,
     commitment: a.commitment,

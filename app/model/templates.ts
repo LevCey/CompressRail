@@ -9,6 +9,7 @@ const tid = (module: string, entity: string): string => `#${PACKAGE}:${module}:$
 
 export const TEMPLATES = {
   BilateralTrade: tid("CompressRail.Trade", "BilateralTrade"),
+  TradeProposal: tid("CompressRail.Trade", "TradeProposal"),
   CycleNomination: tid("CompressRail.Trade", "CycleNomination"),
   ParticipantProfile: tid("CompressRail.Profile", "ParticipantProfile"),
   CompressionCycle: tid("CompressRail.Cycle", "CompressionCycle"),
@@ -17,6 +18,9 @@ export const TEMPLATES = {
 
 export const CHOICES = {
   NominateIntoCycle: "NominateIntoCycle",
+  Accept: "Accept",
+  Decline: "Decline",
+  Withdraw: "Withdraw",
   Commit: "Commit",
   Execute: "Execute",
   DiscloseToAuditor: "DiscloseToAuditor",

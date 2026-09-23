@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   TEMPLATES,
+  createTradeProposal,
   CHOICES,
   createBilateralTrade,
   createParticipantProfile,
@@ -29,6 +30,7 @@ describe("template ids and choices", () => {
   it("uses the package-name qualified form", () => {
     expect(TEMPLATES.BilateralTrade).toBe("#compressrail:CompressRail.Trade:BilateralTrade");
     expect(TEMPLATES.CompressionCycle).toBe("#compressrail:CompressRail.Cycle:CompressionCycle");
+    expect(TEMPLATES.TradeProposal).toBe("#compressrail:CompressRail.Trade:TradeProposal");
     expect(CHOICES.Commit).toBe("Commit");
   });
 });
@@ -152,5 +154,24 @@ describe("integration with the ledger client", () => {
       ],
     });
     expect(typeof (calls[0]!.body as { commandId: unknown }).commandId).toBe("string");
+  });
+
+  it("encodes a trade proposal with the same sealed payload as the trade it creates", () => {
+    const args = {
+      proposer: "Alice::1220",
+      counterparty: "Bob::1220",
+      tradeRef: "AB",
+      terms: "ciphertext",
+      commitment: "commitment",
+      auditors: ["Reg::1220"],
+    };
+    expect(createTradeProposal(args)).toEqual({
+      proposer: "Alice::1220",
+      counterparty: "Bob::1220",
+      tradeRef: "AB",
+      terms: "ciphertext",
+      commitment: "commitment",
+      auditors: ["Reg::1220"],
+    });
   });
 });

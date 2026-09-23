@@ -43,3 +43,53 @@ template CycleNomination
   where
     signatory nominator
     observer operator
+
+-- A proposal for a bilateral trade, so the trade can be agreed across two
+-- participant nodes.
+--
+-- `BilateralTrade` has both counterparties as signatories, which a single
+-- submission can only authorize while both parties are hosted on the same
+-- participant: a ledger user cannot act as a party hosted elsewhere. Splitting
+-- creation into propose-then-accept lets the signatory set accumulate over two
+-- submissions from two nodes — the same pattern `CompressionCycle` already uses
+-- when participants commit to a cycle the operator opened.
+--
+-- The proposal carries the same ciphertext and commitment as the trade it will
+-- create. The proposer is the only signatory, so nothing binds the counterparty
+-- until it accepts; and because the payload is already sealed, the proposal
+-- discloses no more than the trade does.
+template TradeProposal
+  with
+    proposer : Party
+    counterparty : Party
+    tradeRef : TradeRef
+    terms : Ciphertext
+    commitment : Commitment
+    auditors : [Party]
+  where
+    signatory proposer
+    observer counterparty
+
+    ensure proposer /= counterparty
+
+    -- The counterparty accepts, and the trade is created with both as signatories.
+    choice Accept : ContractId BilateralTrade
+      controller counterparty
+      do
+        create BilateralTrade with
+          cptyA = proposer
+          cptyB = counterparty
+          tradeRef
+          terms
+          commitment
+          auditors
+
+    -- Either side can walk away: the counterparty declines, or the proposer
+    -- withdraws before acceptance.
+    choice Decline : ()
+      controller counterparty
+      do pure ()
+
+    choice Withdraw : ()
+      controller proposer
+      do pure ()

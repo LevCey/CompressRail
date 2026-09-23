@@ -23,6 +23,17 @@ export interface BilateralTradeArgs {
   readonly auditors: string[];
 }
 
+// A proposal for a bilateral trade, so the trade can be agreed across two
+// participant nodes: the proposer signs, the counterparty accepts.
+export interface TradeProposalArgs {
+  readonly proposer: string;
+  readonly counterparty: string;
+  readonly tradeRef: string;
+  readonly terms: string; // ciphertext
+  readonly commitment: string;
+  readonly auditors: string[];
+}
+
 export interface ParticipantProfileArgs {
   readonly participant: string;
   readonly auditor: string | null; // Optional Party
