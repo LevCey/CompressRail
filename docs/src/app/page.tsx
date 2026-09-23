@@ -41,14 +41,19 @@ export default function Overview() {
       </p>
       <p>
         The mechanism that delivers compression carries a structural cost of its
-        own. To find the offsetting cycle, every participant has to share its
-        portfolio sensitivities with a central operator that computes the result —
-        and that operator therefore sees every participant&apos;s book. The
-        largest dealers tolerate this; much of the mid-tier sell-side and most of
-        the buy-side do not, and stay out. A large share of compressible exposure
-        is left stranded as a result.
+        own. To find the offsetting cycle, every participant has to submit its trade
+        population, valuations, risk values and tolerances to a central operator that
+        computes the result — so that operator holds every participant&apos;s book.
+        That is a documented property of how the services work, not an inference.
       </p>
-      <p>This is a privacy problem, not a technology problem.</p>
+      <p>
+        Whether it is also what keeps firms away is a separate question, and one we do
+        not claim to have answered: public sources do not attribute low participation
+        to it, and buy-side and regional-bank participation in existing services is
+        documented. What CompressRail removes is the requirement itself. Whether
+        removing it changes who participates is the hypothesis being tested, not a
+        result being reported.
+      </p>
 
       <h2>What CompressRail does</h2>
       <p>

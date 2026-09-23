@@ -42,12 +42,15 @@ initial margin across non-cleared and cleared derivatives in the hundreds of bil
 the funding cost of carrying that margin runs into the billions per year.
 
 The mechanism that delivers compression carries a structural cost of its own. To find the offsetting
-cycle, every participant has to share its portfolio sensitivities with a central operator that computes
-the result — and that operator therefore sees every participant's book. The largest dealers tolerate
-this; much of the mid-tier sell-side and most of the buy-side do not, and stay out. A large share of
-compressible exposure is left stranded as a result.
+cycle, every participant has to submit its trade population, valuations, risk values and tolerances to a
+central operator that computes the result — so that operator holds every participant's book. That is a
+documented property of how the services work, not an inference.
 
-This is a privacy problem, not a technology problem.
+Whether it is also what keeps firms away is a separate question, and one we do not claim to have
+answered. Public sources do not attribute low participation to it, and buy-side and regional-bank
+participation in existing services is documented. What CompressRail removes is the requirement itself:
+you can join a cycle without disclosing positions to the operator coordinating it. Whether removing it
+changes who participates is the hypothesis we are testing, not a result we are reporting.
 
 ## What CompressRail does
 
