@@ -3,6 +3,7 @@ import { fetchTransport, retryingTransport, LedgerClient } from "../ledger/index
 import { runOperatorBlindnessScenario } from "./blindness";
 import { runCompressionCycle } from "./cycle";
 import { runSelectiveDisclosureScenario } from "./disclosure";
+import { runProposalScenario } from "./proposal";
 
 // Runs only when a live JSON Ledger API URL is provided, e.g.
 //   E2E_LEDGER_URL=http://localhost:7575 npx vitest run scenario/e2e.test.ts
@@ -58,5 +59,25 @@ describe.skipIf(!url)("selective regulator disclosure on a live Canton ledger", 
     // and Regulator(B) does not gain Alice's trade just because it was disclosed to A.
     expect(r.regulatorASeesBobsTrade).toBe(false);
     expect(r.regulatorBSeesAlicesTrade).toBe(false);
+  }, 60_000);
+});
+
+describe.skipIf(!url)("propose-then-accept on a live Canton ledger", () => {
+  it("creates a two-signatory trade with one acting party per submission", async () => {
+    const client = new LedgerClient({ transport: retryingTransport(fetchTransport(url as string)), token: "" });
+    const r = await runProposalScenario(client);
+
+    // The proposal alone binds nobody.
+    expect(r.tradesBeforeAccept).toBe(0);
+    // After acceptance both counterparties hold it from their own projection.
+    expect(r.proposerTradeCount).toBe(1);
+    expect(r.counterpartyTradeCount).toBe(1);
+    // The operator is a stakeholder of nothing, as on the direct path.
+    expect(r.operatorTradeCount).toBe(0);
+    // Terms are ciphertext on-ledger and open for the counterparty.
+    expect(r.onLedgerTermsAreCiphertext).toBe(true);
+    expect(r.counterpartyDecryptedTerms).toMatchObject({ instrument: "IRS", notional: 75_000_000 });
+    // No submission acted for more than one party — the cross-node constraint.
+    expect(r.maxActAsPerSubmission).toBe(1);
   }, 60_000);
 });
