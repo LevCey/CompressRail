@@ -46,10 +46,15 @@ deploy/    Local Canton sandbox script and topology notes`}</pre>
           signed only by its two counterparties. This composition is required
           because a Daml choice&apos;s authority does not accumulate across
           separate exercises — the accumulating contract is what lets one atomic
-          transaction carry every participant&apos;s authority. Commit checks only
-          that the participant was invited and within tolerance, not the teardown
-          list — so teardown consent is by convention in this build (the list is
-          visible before committing); binding it via NominateIntoCycle is roadmap.
+          transaction carry every participant&apos;s authority. Consent is bound to
+          the exact plan: a participant exercises Commit on one specific cycle
+          contract carrying that teardown list and topology, and Commit rebuilds the
+          cycle with <code>create this with</code>, so neither field can drift as
+          commits accumulate — and an already-committed set cannot be moved onto a
+          different list, because committed is the signatory set and only Commit adds
+          to it. What Commit does <em>not</em> check is whether a listed trade was
+          ever one the participant agreed to include; binding that via
+          NominateIntoCycle is roadmap.
         </li>
         <li>
           <strong>SelectiveAuditDisclosure</strong> — participant-initiated;

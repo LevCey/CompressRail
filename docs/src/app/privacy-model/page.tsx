@@ -138,11 +138,17 @@ export default function PrivacyModel() {
           commitment — never standalone.
         </li>
         <li>
-          <strong>Not on-ledger teardown consent (yet).</strong> The trades a
-          cycle tears up are visible to each participant before it commits, but
-          the commit does not yet force it to re-assert consent to that exact
-          list on-ledger; binding it via the modeled NominateIntoCycle marker is
-          roadmap.
+          <strong>No on-ledger record that a trade was offered up.</strong> Consent
+          to the plan itself is bound: a participant commits on one specific cycle
+          contract carrying that exact teardown list and topology, and neither field
+          can change as commits accumulate. What is missing is the step before —
+          nothing records that a listed trade was ever one the participant agreed to
+          include, so the check is that the participant reviewed the list, not that
+          the ledger can verify it did. Binding that via the modeled
+          NominateIntoCycle marker is roadmap. Separately, no ledger can attest that
+          a participant&apos;s own client showed it the list it actually committed
+          to; the per-node tolerance check is computed against the list read back
+          from the cycle contract, which narrows that gap without closing it.
         </li>
       </ul>
 

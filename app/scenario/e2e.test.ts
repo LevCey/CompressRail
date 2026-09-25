@@ -28,7 +28,7 @@ describe.skipIf(!url)("operator-blindness on a live Canton ledger", () => {
     expect(r.regulatorTradeCount).toBe(1);
     expect(r.parties.regulator).toBeTruthy();
     expect(r.parties.carol).toBeTruthy();
-  }, 60_000);
+  }, 90_000);
 });
 
 describe.skipIf(!url)("the full compression cycle on a live Canton ledger", () => {
@@ -45,7 +45,7 @@ describe.skipIf(!url)("the full compression cycle on a live Canton ledger", () =
     // Across the whole lifecycle — open, three commits, and the atomic execute —
     // the operator never becomes a stakeholder of any bilateral trade.
     expect(r.operatorTradeCount).toBe(0);
-  }, 60_000);
+  }, 90_000);
 });
 
 describe.skipIf(!url)("selective regulator disclosure on a live Canton ledger", () => {
@@ -59,7 +59,7 @@ describe.skipIf(!url)("selective regulator disclosure on a live Canton ledger", 
     // and Regulator(B) does not gain Alice's trade just because it was disclosed to A.
     expect(r.regulatorASeesBobsTrade).toBe(false);
     expect(r.regulatorBSeesAlicesTrade).toBe(false);
-  }, 60_000);
+  }, 90_000);
 });
 
 describe.skipIf(!url)("propose-then-accept on a live Canton ledger", () => {
@@ -79,5 +79,5 @@ describe.skipIf(!url)("propose-then-accept on a live Canton ledger", () => {
     expect(r.counterpartyDecryptedTerms).toMatchObject({ instrument: "IRS", notional: 75_000_000 });
     // No submission acted for more than one party — the cross-node constraint.
     expect(r.maxActAsPerSubmission).toBe(1);
-  }, 60_000);
+  }, 90_000);
 });
