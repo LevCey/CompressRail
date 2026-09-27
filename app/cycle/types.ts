@@ -12,6 +12,10 @@ import type { Position, RiskAssessment } from "../verify/index";
 // commit the same `sealed.commitment`, which is what the on-ledger execute checks.
 export interface HeldLeg {
   readonly counterparty: string;
+  // The leg's cptyA: the sealed risk is quoted from this party's side, so the other
+  // counterparty holds its negation. On-ledger this is the first element of the
+  // leg's topology pair, which `Execute` uses as the created trade's cptyA.
+  readonly cptyA: string;
   readonly sealed: SealedLeg;
 }
 

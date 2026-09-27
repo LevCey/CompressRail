@@ -35,13 +35,38 @@ function flipLastHex(value: string): string {
 }
 
 describe("prepareParticipation", () => {
+  // A net leg's risk is sealed from its cptyA's side; the other counterparty holds
+  // the negation. A partly offsetting pair (A +100, A -60 against B) leaves A net +40
+  // and B net -40, and the one leg of +40 (A as cptyA) must pass for both of them.
+  it("orients a held leg by its cptyA, so both sides of a net leg pass", async () => {
+    const sealed = await sealAB({ instrument: "IRS", risk: { "2Y": 40 } });
+    const a = await prepareParticipation({
+      participant: "A", keyPair: alice, before: [{ legId: "t1", risk: { "2Y": 100 } }, { legId: "t2", risk: { "2Y": -60 } }],
+      legs: [{ counterparty: "B", cptyA: "A", sealed }], tolerance: 0,
+    });
+    const b = await prepareParticipation({
+      participant: "B", keyPair: bob, before: [{ legId: "t1", risk: { "2Y": -100 } }, { legId: "t2", risk: { "2Y": 60 } }],
+      legs: [{ counterparty: "A", cptyA: "A", sealed }], tolerance: 0,
+    });
+    expect(a.decision).toBe("commit");
+    expect(b.decision).toBe("commit");
+    expect(b.assessment.magnitude).toBe(0);
+  });
+
+  it("rejects a held leg whose cptyA is neither counterparty", async () => {
+    const sealed = await sealAB({ instrument: "IRS", risk: { "2Y": 0 } });
+    await expect(
+      prepareParticipation({ participant: "A", keyPair: alice, before: [], legs: [{ counterparty: "B", cptyA: "C", sealed }], tolerance: 0 }),
+    ).rejects.toThrow(/neither side/);
+  });
+
   it("commits within tolerance, and both counterparties agree on the same commitment", async () => {
     const sealed = await sealAB({ instrument: "IRS", notional: 100_000_000, risk: { "2Y": 0, "5Y": 0 } });
     const a = await prepareParticipation({
-      participant: "A", keyPair: alice, before, legs: [{ counterparty: "B", sealed }], tolerance: 0,
+      participant: "A", keyPair: alice, before, legs: [{ counterparty: "B", cptyA: "A", sealed }], tolerance: 0,
     });
     const b = await prepareParticipation({
-      participant: "B", keyPair: bob, before: [], legs: [{ counterparty: "A", sealed }], tolerance: 0,
+      participant: "B", keyPair: bob, before: [], legs: [{ counterparty: "A", cptyA: "A", sealed }], tolerance: 0,
     });
 
     expect(a.decision).toBe("commit");
@@ -55,7 +80,7 @@ describe("prepareParticipation", () => {
   it("puts only {counterparty, commitment, enc} + boolean on-ledger — no cleartext, risk, or tolerance (R4.3)", async () => {
     const sealed = await sealAB({ instrument: "IRS", notional: 100_000_000, currency: "USD", risk: { "2Y": 0, "5Y": 0 } });
     const res = await prepareParticipation({
-      participant: "A", keyPair: alice, before, legs: [{ counterparty: "B", sealed }], tolerance: 0,
+      participant: "A", keyPair: alice, before, legs: [{ counterparty: "B", cptyA: "A", sealed }], tolerance: 0,
     });
     expect(res.decision).toBe("commit");
     if (res.decision !== "commit") return;
@@ -70,7 +95,7 @@ describe("prepareParticipation", () => {
   it("declines when post-cycle risk movement exceeds tolerance (R4.4 / I-5)", async () => {
     const sealed = await sealAB({ instrument: "IRS", risk: { "2Y": 30 } });
     const res = await prepareParticipation({
-      participant: "A", keyPair: alice, before, legs: [{ counterparty: "B", sealed }], tolerance: 10,
+      participant: "A", keyPair: alice, before, legs: [{ counterparty: "B", cptyA: "A", sealed }], tolerance: 10,
     });
     expect(res.decision).toBe("decline");
     expect(res.assessment.withinTolerance).toBe(false);
@@ -96,7 +121,7 @@ describe("prepareParticipation", () => {
 
   it("refuses to commit a leg whose commitment fails verification", async () => {
     const sealed = await sealAB({ instrument: "IRS", risk: { "2Y": 0 } });
-    const tampered: HeldLeg = { counterparty: "B", sealed: { ...sealed, commitment: flipLastHex(sealed.commitment) } };
+    const tampered: HeldLeg = { counterparty: "B", cptyA: "A", sealed: { ...sealed, commitment: flipLastHex(sealed.commitment) } };
     await expect(
       prepareParticipation({ participant: "A", keyPair: alice, before, legs: [tampered], tolerance: 0 }),
     ).rejects.toThrow(/commitment mismatch/);

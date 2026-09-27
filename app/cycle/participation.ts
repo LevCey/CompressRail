@@ -18,8 +18,13 @@ export async function prepareParticipation(input: PrepareParticipationInput): Pr
   // before the participant would ever commit to it.
   const after: Position[] = [];
   for (const leg of input.legs) {
+    if (leg.cptyA !== input.participant && leg.cptyA !== leg.counterparty) {
+      throw new Error(`leg with ${leg.counterparty} names a cptyA that is neither side: ${leg.cptyA}`);
+    }
     const terms = await openLeg(leg.sealed, input.participant, input.keyPair);
-    after.push({ legId: leg.counterparty, risk: riskOf(terms) });
+    const sign = leg.cptyA === input.participant ? 1 : -1;
+    const risk = riskOf(terms);
+    after.push({ legId: leg.counterparty, risk: Object.fromEntries(Object.entries(risk).map(([k, v]) => [k, sign * v])) });
   }
 
   const assessment = assessCompression({ before: input.before, after, tolerance: input.tolerance });
