@@ -49,7 +49,7 @@ export interface CycleResult {
   };
 }
 
-interface Party {
+export interface Party {
   readonly id: string;
   readonly keys: KeyPair;
 }
@@ -84,13 +84,13 @@ async function writeTrade(client: LedgerClient, x: Party, y: Party, tradeRef: st
 // proposed for teardown and the exact replacement topology. Read from the
 // participant's own view rather than the operator's, so what is assessed is what the
 // participant is about to commit to.
-interface ProposedCycle {
+export interface ProposedCycle {
   readonly contractId: string;
   readonly teardown: readonly string[];
   readonly topology: readonly (readonly [string, string])[];
 }
 
-async function readProposal(client: LedgerClient, party: string, cycleId: string): Promise<ProposedCycle> {
+export async function readProposal(client: LedgerClient, party: string, cycleId: string): Promise<ProposedCycle> {
   const acs = await client.activeContracts(party, { templateIds: [TEMPLATES.CompressionCycle] });
   const found = acs.find((c) => c.createArgument["cycleId"] === cycleId);
   if (!found) throw new Error(`cycle ${cycleId} is not in ${party}'s projection`);
@@ -99,15 +99,20 @@ async function readProposal(client: LedgerClient, party: string, cycleId: string
 }
 
 // The counterparties a party will face after the cycle, from the proposed topology.
-function counterpartiesIn(topology: readonly (readonly [string, string])[], party: string): string[] {
+export function counterpartiesIn(topology: readonly (readonly [string, string])[], party: string): string[] {
   return topology.filter(([x, y]) => x === party || y === party).map(([x, y]) => (x === party ? y : x));
+}
+
+// The same, keeping each pair's orientation: the first element is the leg's cptyA.
+export function legPairsIn(topology: readonly (readonly [string, string])[], party: string): { counterparty: string; cptyA: string }[] {
+  return topology.filter(([x, y]) => x === party || y === party).map(([x, y]) => ({ counterparty: x === party ? y : x, cptyA: x }));
 }
 
 // The positions a party gives up: for each proposed teardown entry that is in this
 // party's own projection, decrypt the trade with the party's own key and take the
 // signed risk it contributes. `risk` in the sealed terms is from cptyA's perspective,
 // so cptyB holds the opposite — the same convention the solver uses.
-async function positionsTornUp(
+export async function positionsTornUp(
   client: LedgerClient,
   p: Party,
   teardown: readonly string[],
@@ -130,7 +135,7 @@ async function positionsTornUp(
   return out;
 }
 
-async function disclose(client: LedgerClient, party: string, contractId: string): Promise<DisclosedContract> {
+export async function disclose(client: LedgerClient, party: string, contractId: string): Promise<DisclosedContract> {
   const acs = await client.activeContracts(party, { templateIds: [TEMPLATES.BilateralTrade] });
   const found = acs.find((c) => c.contractId === contractId);
   if (!found) throw new Error(`cannot disclose ${contractId}: not in ${party}'s projection`);
@@ -214,7 +219,7 @@ export async function runCompressionCycle(
   const heldLegsFor = (party: Party): HeldLeg[] =>
     matched.replacements
       .filter((r) => r.a === party.id || r.b === party.id)
-      .map((r) => ({ counterparty: r.a === party.id ? r.b : r.a, sealed: sealedFor(r.a, r.b) }));
+      .map((r) => ({ counterparty: r.a === party.id ? r.b : r.a, cptyA: r.a, sealed: sealedFor(r.a, r.b) }));
 
   const deadline = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
   await client.submitAndWait([operator], [
@@ -266,8 +271,7 @@ export async function runCompressionCycle(
     // Who it will face after the cycle, taken from the contract rather than from the
     // local matching result. A topology naming a counterparty this client never
     // prepared a leg for is an error rather than something to commit to blindly.
-    const counterparties = counterpartiesIn(proposal.topology, p.id);
-    const legs: HeldLeg[] = counterparties.map((cp) => ({ counterparty: cp, sealed: sealedFor(p.id, cp) }));
+    const legs: HeldLeg[] = legPairsIn(proposal.topology, p.id).map(({ counterparty, cptyA }) => ({ counterparty, cptyA, sealed: sealedFor(p.id, counterparty) }));
 
     const result = await prepareParticipation({
       participant: p.id,
