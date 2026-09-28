@@ -29,6 +29,13 @@ npm install
 npm test`}</pre>
       <p>With the sandbox running, the live end-to-end checks can also run:</p>
       <pre>{`E2E_LEDGER_URL=http://localhost:7575 npm run e2e`}</pre>
+      <p>
+        The two-node check runs the cycle with its counterparties on two
+        different participant nodes. It needs both nodes configured — the
+        variables are listed in <code>app/scenario/crossnode.e2e.test.ts</code>
+        — and is skipped otherwise:
+      </p>
+      <pre>{`npm run e2e:crossnode`}</pre>
 
       <h2>Run the demo</h2>
       <p>With the sandbox running:</p>

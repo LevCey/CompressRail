@@ -133,6 +133,15 @@ deploy/    Local Canton sandbox script and topology notes`}</pre>
           <strong>Key handling is demo-grade.</strong> The code is unaudited and
           runs on DevNet/local sandbox only.
         </li>
+        <li>
+          <strong>Two participant nodes, with limits.</strong> A cycle has run
+          with its counterparties on two different participant nodes — our
+          DevNet validator and the shared, colocated HackCanton participant —
+          including the net replacement leg, signed by a party on each node.
+          The operator still shares a node with one counterparty, sealed legs
+          are handed over in-process rather than over a real channel, and the
+          hosted demo runs on a single participant.
+        </li>
       </ul>
     </>
   );

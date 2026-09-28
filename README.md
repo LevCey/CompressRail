@@ -13,8 +13,9 @@ the cycle, ever seeing another participant's positions.
 > real transactions through the DevNet global synchronizer, including the atomic compression cycle,
 > selective disclosure, and the operator-blindness check the privacy matrix and "try to cheat" control
 > drive (see [Verify the live deployment](#verify-the-live-deployment)). A local Canton sandbox is used
-> only for development and tests. See [Roadmap](#roadmap) for what is not yet built (notably, running
-> across separate participant nodes). Not audited. Not for production use.
+> only for development and tests. A compression cycle has also run with its counterparties on two
+> different participant nodes ([details and limits](#across-two-participant-nodes)). See
+> [Roadmap](#roadmap) for what is not yet built. Not audited. Not for production use.
 
 ## Verify the live deployment
 
@@ -32,6 +33,28 @@ parties on the validator):
 
 ```
 cd app && E2E_LEDGER_URL=https://demo.compressrail.com/ledger npm run e2e
+```
+
+### Across two participant nodes
+
+The same cycle has also run with its counterparties on two different participant nodes: our DevNet
+validator and the NODERS-hosted HackCanton DevNet participant. That second node runs in colocation mode —
+tenants share one participant, separated by namespace — so this does not show each firm running its own
+institution's node.
+
+In that run ([`app/scenario/crossnode.ts`](app/scenario/crossnode.ts)), two partly offsetting trades are
+agreed by propose/accept, one proposed from each node, because a submission can only act for parties
+hosted on the node it is sent to. Each side reads the proposed cycle from its own node, checks the plan
+against its own decrypted trades, and commits there. The operator's execute tears both trades up and
+creates the net replacement leg, whose two signatories sit on different nodes; one of the torn-up trades
+is disclosed to the operator from the other node. The operator is a stakeholder of no trade throughout.
+
+What it does not yet show: the operator runs on the same node as one of the counterparties; both sides'
+keys live in one test process, so the off-ledger handoff of the sealed leg is simulated; and the hosted
+demo itself still runs on a single participant.
+
+```
+cd app && npm run e2e:crossnode   # needs both nodes configured; see scenario/crossnode.e2e.test.ts
 ```
 
 ## The problem
@@ -173,9 +196,9 @@ Build the model, start a local sandbox, and run the off-ledger client's tests �
 
 The demo (`demo/README.md`) consumes the off-ledger client as a local dependency and drives a
 compression cycle against that sandbox, letting you inspect each party's view — including the
-operator's, which contains only ciphertext. Everything runs on a single participant node (the hosted
-demo runs against a Canton DevNet validator); see [Roadmap](#roadmap) for running across separate
-participant nodes.
+operator's, which contains only ciphertext. The demo runs on a single participant node (the hosted
+demo runs against a Canton DevNet validator); the two-node run is described in
+[Across two participant nodes](#across-two-participant-nodes).
 
 ## Demo
 
@@ -205,12 +228,12 @@ This is a hackathon MVP focused on the privacy architecture, not a production co
   asset settlement and custody, and MainNet deployment are roadmap items, not part of this build.
 - Key handling is demo-grade, and the code is unaudited. It runs on a local Canton sandbox for
   development; the hosted demo runs against a public Canton DevNet validator (a single participant, taken
-  down after the hackathon).
+  down after the hackathon). The two-node run uses a second, shared DevNet participant.
 
 ## Roadmap
 
-- Running the model across separate participant nodes rather than a single participant node, to harden
-  the cross-node privacy proof.
+- Extending the two-node run: the operator on a node that hosts no counterparty, each firm on its own
+  node, a real off-ledger channel for sealed legs, and the demo itself across nodes.
 - Operator-blind matching via per-node multi-party computation, which also removes the operator's
   visibility of cycle topology.
 - Replacement trades modeled against the parties' existing master agreements.

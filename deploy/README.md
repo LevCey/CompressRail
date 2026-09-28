@@ -39,6 +39,9 @@ is enforced by Canton's projection, not by filtering in the client. Without
 ## Scope
 
 This is the local topology: the parties are hosted on a single sandbox participant,
-which is enough to demonstrate the per-party projection privacy. Running the operator
-and each participant on **separate** participant nodes — the cross-node proof — is the
-next step, and reuses the same off-ledger client and model bindings.
+which is enough to demonstrate the per-party projection privacy. Hosting the
+counterparties on **separate** participant nodes is exercised by the two-node run
+(`app/scenario/crossnode.ts`, `npm run e2e:crossnode`), which reuses the same
+off-ledger client and model bindings with one client per node. There the operator
+still shares a node with one counterparty; an operator on a node of its own is the
+next step.
