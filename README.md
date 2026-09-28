@@ -223,7 +223,8 @@ Each party's view is its own; the demo does not currently render several parties
 This is a hackathon MVP focused on the privacy architecture, not a production compression engine.
 
 - The matching is a small, real, deterministic algorithm over a fixture scenario. Production risk models
-  (SIMM, SA-CCR, CRIF) are out of scope.
+  (SIMM, SA-CCR, CRIF) are out of scope. It can pair parties that had no trade with each other before;
+  production services typically use conservative compression, which only shrinks existing obligations.
 - Operator-blind matching via multi-party computation, topology hiding, legal-enforceability wrappers,
   asset settlement and custody, and MainNet deployment are roadmap items, not part of this build.
 - Key handling is demo-grade, and the code is unaudited. It runs on a local Canton sandbox for

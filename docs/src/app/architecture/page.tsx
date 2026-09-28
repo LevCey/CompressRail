@@ -123,6 +123,9 @@ deploy/    Local Canton sandbox script and topology notes`}</pre>
           <strong>The matching is a real, deterministic algorithm</strong>, not
           a production risk model. It nets sensitivities and rebuilds a minimal
           replacement topology; it does not implement SIMM, SA-CCR, or CRIF.
+          It can also pair parties that had no trade with each other before,
+          where production services typically only shrink existing
+          obligations.
         </li>
         <li>
           <strong>Operator-blind matching via multi-party computation</strong>,
