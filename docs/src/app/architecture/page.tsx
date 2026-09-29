@@ -137,13 +137,13 @@ deploy/    Local Canton sandbox script and topology notes`}</pre>
           runs on DevNet/local sandbox only.
         </li>
         <li>
-          <strong>Two participant nodes, with limits.</strong> A cycle has run
-          with its counterparties on two different participant nodes — our
-          DevNet validator and the shared, colocated HackCanton participant —
-          including the net replacement leg, signed by a party on each node.
-          The operator still shares a node with one counterparty, sealed legs
-          are handed over in-process rather than over a real channel, and the
-          hosted demo runs on a single participant.
+          <strong>Three participant nodes, with limits.</strong> A
+          multilateral cycle has run across three participant nodes, with the
+          operator on a node that hosts no firm and holds no trade; its net
+          replacement leg is signed by parties on two different nodes. One
+          node is a shared, colocated participant and two run on the same
+          host, sealed legs are handed over in-process rather than over a real
+          channel, and the hosted demo runs on a single participant.
         </li>
       </ul>
     </>
