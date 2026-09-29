@@ -58,11 +58,11 @@ export interface CrossNodeResult {
   readonly parties: { readonly operator: string; readonly a: string; readonly h: string };
 }
 
-const namespaceOf = (party: string): string => party.split("::")[1] ?? "";
+export const namespaceOf = (party: string): string => party.split("::")[1] ?? "";
 
 // Node H's projection is read through its own ledger API, which can trail node A's by
 // a moment after a submission completes on node A. Poll rather than assume.
-async function waitFor<T>(what: string, read: () => Promise<T>, ok: (v: T) => boolean, pollMs: number, timeoutMs: number): Promise<T> {
+export async function waitFor<T>(what: string, read: () => Promise<T>, ok: (v: T) => boolean, pollMs: number, timeoutMs: number): Promise<T> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const v = await read();
@@ -72,12 +72,12 @@ async function waitFor<T>(what: string, read: () => Promise<T>, ok: (v: T) => bo
   }
 }
 
-const tradesOf = (p: HostedParty): Promise<CreatedEvent[]> =>
+export const tradesOf = (p: HostedParty): Promise<CreatedEvent[]> =>
   p.client.activeContracts(p.id, { templateIds: [TEMPLATES.BilateralTrade] });
 
 // Propose on the proposer's node, accept on the counterparty's node. Returns the
 // trade's contract id and the wrapped keys both sides hold off-ledger.
-async function agreeTrade(
+export async function agreeTrade(
   proposer: HostedParty,
   counterparty: HostedParty,
   tradeRef: string,

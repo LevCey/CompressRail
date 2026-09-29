@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "e2e": "vitest run scenario/e2e.test.ts",
-    "e2e:crossnode": "vitest run scenario/crossnode.e2e.test.ts"
+    "e2e:crossnode": "vitest run scenario/crossnode.e2e.test.ts",
+    "e2e:threenode": "vitest run scenario/threenode.e2e.test.ts"
   },
   "dependencies": {
     "libsodium-wrappers": "0.8.4"
