@@ -98,11 +98,13 @@ service, no HSM, and no operator-held key. Production key management is future w
 
 ## Privacy boundary
 
-The operator never sees a participant's cleartext economic terms — positions,
-sensitivities, notionals, rates, or trade contents. It coordinates over ciphertext,
-commitments, and coordination metadata only. It does see cycle topology (which pairs
-receive replacement legs) and which trades are nominated; hiding that as well needs
-multi-party computation and is not part of this layer. This is not zero-knowledge,
+Economic payloads are encrypted, and the operator party is not a decryption
+recipient. The operator and invited cycle participants receive transaction metadata,
+including counterparty identities and ciphertext — which pairs receive replacement
+legs from the moment a cycle is proposed, and every torn-up trade and new leg once it
+executes. This does not guarantee topology privacy or prevent inferences from
+participants' own trades and cycle outcomes. The matching here runs with all inputs in
+one place; the multi-node tests hold every party's keys in one process. This is not zero-knowledge,
 homomorphic encryption, or MPC, and it makes no claim about the legal enforceability
 of any trade.
 

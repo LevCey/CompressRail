@@ -129,9 +129,11 @@ export default function Home() {
           </p>
           <p className="text-muted">
             <strong className="text-foreground">What this is not.</strong> The
-            operator does see cycle topology — which participant pairs receive
-            replacement legs. Hiding that as well requires multi-party computation
-            and is on the roadmap, not in this build. This is not zero-knowledge,
+            operator and every firm invited to a cycle receive its transaction
+            metadata — who the torn-up and new trades are between, as ciphertext —
+            and a firm can infer some amounts from its own trades and the outcome.
+            Private matching and reduced execution visibility are on the roadmap,
+            not in this build. This is not zero-knowledge,
             not fully homomorphic encryption, and not MPC. It does not make
             replacement trades legally enforceable, and it never takes custody of
             any asset.

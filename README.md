@@ -47,9 +47,10 @@ trade is agreed by propose/accept, because a submission can only act for parties
 is sent to. Each firm reads the proposed cycle from its own node, checks the plan against its own
 decrypted trades, and commits there. The operator's execute, submitted from its own node, tears up all
 three trades and creates one net leg of 40 between A and B, whose two signatories sit on different
-nodes; C nets out entirely. The torn-up trades reach the operator only as disclosed ciphertext, and the
-test checks that the operator's node holds no trade for the operator — neither active nor anywhere in
-its history. An earlier two-node run ([`app/scenario/crossnode.ts`](app/scenario/crossnode.ts)) covers
+nodes; C nets out entirely. The operator is a stakeholder of none of the trades and never holds one as
+an active contract; their terms reach it only as ciphertext. It does receive the torn-up trades and the
+new leg as transaction metadata when it executes, as does every firm in the cycle — see
+[what is exposed](#what-operator-blind-means-here--precisely). An earlier two-node run ([`app/scenario/crossnode.ts`](app/scenario/crossnode.ts)) covers
 the bilateral case.
 
 What it does not show: the HackCanton node runs in colocation mode (tenants share one participant,
@@ -82,7 +83,7 @@ changes who participates is the hypothesis we are testing, not a result we are r
 ## What CompressRail does
 
 CompressRail moves the trust boundary from the operator to the protocol. The operator coordinates a
-compression cycle but is architecturally unable to see any participant's economic terms. Each
+compression cycle but is architecturally unable to read any participant's economic terms. Each
 participant verifies, on its own node, that its post-cycle risk stays within its declared tolerance, and
 authorizes only its own legs. The whole multilateral rebalance commits atomically — every leg or none.
 A participant can grant its home regulator a read-only view scoped to that participant's contracts alone.
@@ -95,19 +96,26 @@ The operator never sees any participant's economic terms — positions, sensitiv
 details. Two mechanisms enforce this together:
 
 1. **Daml stakeholder scoping.** The operator is never a signatory or observer on any contract that
-   carries a participant's trade. Canton's projection rules then ensure the operator's node is not even
-   notified of those contracts.
+   carries a participant's trade, so it is not notified when those trades are created and never holds
+   one as an active contract. When it executes a cycle it does receive the trades being torn up and the
+   new legs, as ciphertext (below).
 2. **Application-layer encryption.** Every economic field is written on-ledger only as
    authenticated-encryption ciphertext plus a hash commitment, and the operator holds no decryption key.
    This second layer is necessary, not redundant: on Canton, the participant that submits a transaction
    interprets all of it, so anything stored in cleartext would be visible to whoever submits.
 
-**What the operator can see:** that a cycle exists, which trades are nominated (by opaque reference), the
-netting topology (which participant pairs receive replacement trades), the opaque commitments, and each
-participant's boolean "within tolerance" attestation. It sees no economic magnitudes.
+**What is exposed.** Economic payloads are encrypted, and the operator party is not a decryption
+recipient. The operator and invited cycle participants receive transaction metadata, including
+counterparty identities and ciphertext: from the moment a cycle is proposed, which pairs are to receive
+replacement trades; once it executes, every trade torn up and every new leg, with their references and
+commitments, plus each participant's yes/no "within tolerance" attestation. This does not guarantee
+topology privacy or prevent inferences from participants' own trades and cycle outcomes — in a small
+ring, a firm that knows its own trades and sees that another firm receives no new leg can work out that
+firm's other trade. In this build the matching runs with all inputs in one place. Private matching and
+reduced execution visibility are separate roadmap items. The current multi-node test uses a shared test
+process holding participant keys.
 
-**What this is not.** The operator does see cycle topology; hiding that as well requires multi-party
-computation and is on the roadmap, not in this build. CompressRail is not zero-knowledge, not fully
+**What this is not.** CompressRail is not zero-knowledge, not fully
 homomorphic encryption, and not MPC. It does not make replacement trades legally enforceable — that is a
 question of the parties' agreements, not of the protocol. It never takes custody of any asset; it
 produces compression instructions and records.
@@ -239,8 +247,11 @@ This is a hackathon MVP focused on the privacy architecture, not a production co
 
 - Extending the multi-node run: each firm on infrastructure of its own, a real off-ledger channel for
   sealed legs, and the demo itself across nodes.
-- Operator-blind matching via per-node multi-party computation, which also removes the operator's
-  visibility of cycle topology.
+- Private matching: computing the match without collecting every firm's net risk in one place
+  (multi-party computation). On its own this does not hide who the new trades are between.
+- Reduced execution visibility: executing a cycle without every participant receiving every other
+  pair's trades, without giving up all-or-nothing execution.
+- Each firm's keys in its own process, with the operator's software unable to reach any of them.
 - Replacement trades modeled against the parties' existing master agreements.
 - Settlement integration for the cash leg.
 - MainNet deployment.

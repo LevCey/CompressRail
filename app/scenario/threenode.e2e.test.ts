@@ -19,7 +19,7 @@ const partyB = env["E2E_H_PARTY"];
 const configured = Boolean(urlA && urlOp && urlH && tokenH && userH && partyB);
 
 describe.skipIf(!configured)("a multilateral compression cycle across three participant nodes", () => {
-  it("compresses a ring no pair can net alone, from an operator node that holds no trade", async () => {
+  it("compresses a ring no pair can net alone, from an operator node that hosts no firm", async () => {
     const nodeA = new LedgerClient({ transport: retryingTransport(fetchTransport(urlA as string)), token: "" });
     const nodeOp = new LedgerClient({ transport: retryingTransport(fetchTransport(urlOp as string)), token: "" });
     const nodeH = new LedgerClient({ transport: retryingTransport(fetchTransport(urlH as string)), token: tokenH as string, userId: userH as string });
@@ -36,7 +36,8 @@ describe.skipIf(!configured)("a multilateral compression cycle across three part
     expect(r.cTradeCount).toBe(0); // C nets out of the cycle entirely
     expect(Math.abs(r.bDecryptedReplacementRisk["2Y"] ?? 0)).toBe(40);
     expect(r.replacementSignatoryNamespaces).toEqual([r.namespaces.a, r.namespaces.h].sort());
-    // The operator's node never held a trade for the operator — not now, not in its history.
+    // The operator is a stakeholder of no trade: none active, none in its flat stream. (Its
+    // ledger-effects stream does receive the cycle's trades as ciphertext — measured separately.)
     expect(r.operatorTradeCount).toBe(0);
     expect(r.operatorTradeEventsInHistory).toBe(0);
     expect(r.maxActAsPerSubmission).toBe(1);

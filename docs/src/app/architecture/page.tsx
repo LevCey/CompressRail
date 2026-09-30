@@ -139,7 +139,9 @@ deploy/    Local Canton sandbox script and topology notes`}</pre>
         <li>
           <strong>Three participant nodes, with limits.</strong> A
           multilateral cycle has run across three participant nodes, with the
-          operator on a node that hosts no firm and holds no trade; its net
+          operator on a node that hosts no firm, and the operator a stakeholder
+          of no trade (it still receives the cycle&apos;s trades as ciphertext
+          when it executes — see the privacy model); its net
           replacement leg is signed by parties on two different nodes. One
           node is a shared, colocated participant and two run on the same
           host, sealed legs are handed over in-process rather than over a real

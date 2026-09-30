@@ -22,8 +22,10 @@ export default function PrivacyModel() {
         <li>
           <strong>Daml stakeholder scoping.</strong> The operator is never a
           signatory or observer on any contract that carries a participant&apos;s
-          trade. Canton&apos;s projection rules then ensure the operator&apos;s
-          node is not even notified of those contracts.
+          trade, so it is not notified when those trades are created and never
+          holds one as an active contract. When it executes a cycle it does
+          receive the trades being torn up and the new legs, as ciphertext
+          (below).
         </li>
         <li>
           <strong>Application-layer encryption.</strong> Every economic field is
@@ -35,14 +37,41 @@ export default function PrivacyModel() {
         </li>
       </ul>
 
-      <h2>What the operator can see</h2>
+      <h2>What is exposed — to the operator and to every firm in a cycle</h2>
       <p>
-        That a cycle exists, which trades are nominated (by opaque reference),
-        the netting topology (which participant pairs receive replacement
-        trades), the opaque commitments, and each participant&apos;s boolean
-        &quot;within tolerance&quot; attestation. It sees no economic
-        magnitudes.
+        Economic payloads are encrypted, and the operator party is not a
+        decryption recipient. The operator and invited cycle participants
+        receive transaction metadata, including counterparty identities and
+        ciphertext. This does not guarantee topology privacy or prevent
+        inferences from participants&apos; own trades and cycle outcomes. In
+        this build the matching runs with all inputs in one place. Private
+        matching and reduced execution visibility are separate roadmap items.
+        The current multi-node test uses a shared test process holding
+        participant keys.
       </p>
+      <ul>
+        <li>
+          <strong>From the moment a cycle is proposed</strong>, every invited
+          firm sees which pairs are to receive replacement trades — including a
+          firm that later declines.
+        </li>
+        <li>
+          <strong>When the cycle executes</strong>, the operator and every
+          committed firm receive the whole transaction: every trade torn up and
+          every new leg, with counterparties, references, ciphertext and
+          commitments. In Daml, a party that is an informee of an action also
+          sees its consequences. Measured on a three-node run by reading each
+          party&apos;s ledger-effects stream; its active contracts and flat
+          stream do not show these trades.
+        </li>
+        <li>
+          <strong>Inference.</strong> Reading nothing, a firm can still derive
+          amounts. In a ring A–B 100, B–C 60, C–A 60, firm A knows its own C–A
+          trade and sees that C receives no new leg, so it can work out that
+          B–C is 60. The operator, which sees no amount, still learns that C&apos;s
+          two trades offset exactly.
+        </li>
+      </ul>
 
       <h2>The privacy matrix</h2>
       <table>
@@ -78,10 +107,10 @@ export default function PrivacyModel() {
             <td>no</td>
           </tr>
           <tr>
-            <td>Cycle topology and validity</td>
-            <td>own legs</td>
-            <td>own legs</td>
-            <td>yes (no economics)</td>
+            <td>Cycle structure (who with whom), as ciphertext</td>
+            <td>yes, if invited</td>
+            <td>yes, if invited</td>
+            <td>yes</td>
             <td>no</td>
           </tr>
           <tr>
@@ -108,9 +137,12 @@ export default function PrivacyModel() {
       <h2>What this is not</h2>
       <ul>
         <li>
-          <strong>Not topology-hiding.</strong> The operator does see cycle
-          topology and which trades are torn up. Hiding that as well requires
-          multi-party computation and is on the roadmap, not in this build.
+          <strong>Not topology-hiding, not inference-proof.</strong> The
+          operator and every invited firm receive the cycle&apos;s structure, and
+          amounts can be inferred from a firm&apos;s own trades and the outcome
+          (above). Multi-party computation would remove the need to collect all
+          inputs in one place; on its own it would not stop the result&apos;s
+          parties from propagating at execution.
         </li>
         <li>
           <strong>Not zero-knowledge, not fully homomorphic encryption, not

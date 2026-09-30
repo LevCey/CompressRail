@@ -14,7 +14,9 @@ or copy are reused.
 ## Claim boundary
 
 The page states plainly what "operator-blind" does and does not mean: the operator
-never sees cleartext economic terms, but it does see cycle topology; this is not
+cannot read economic terms, but it and every invited firm receive the cycle's
+transaction metadata (counterparties and ciphertext), and amounts can be inferred
+from a firm's own trades and the outcome; this is not
 zero-knowledge, homomorphic encryption, or MPC; it makes no claim about legal
 enforceability or custody.
 
