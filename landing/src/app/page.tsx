@@ -44,7 +44,7 @@ export default function Home() {
           <p className="text-sm text-muted sm:text-base">
             Counterparties tear up offsetting bilateral trades and atomically
             redistribute counterparty exposure. The operator coordinates the cycle
-            without ever seeing any participant&apos;s positions, sensitivities, or
+            without being able to read any participant&apos;s positions, sensitivities, or
             trade terms.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">

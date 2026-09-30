@@ -138,7 +138,7 @@ export function CompressionConsole({ onActAsOperator }: { readonly onActAsOperat
         {result && (
           <div className="mt-4 rounded border border-accent-propose/40 bg-accent-propose/10 px-3 py-3">
             <p className="text-xs text-foreground">
-              The operator coordinated this entire cycle without ever seeing a position.
+              The operator coordinated this entire cycle without being able to read a position.
               See exactly what it saw — and try to read a participant&apos;s book yourself.
             </p>
             <button

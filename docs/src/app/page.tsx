@@ -24,7 +24,7 @@ export default function Overview() {
       <h2>The one claim</h2>
       <blockquote>
         The operator computed and committed a multilateral compression cycle
-        without ever seeing a single position.
+        without being able to read a single position.
       </blockquote>
       <p>
         That sentence is the entire product. Everything else in this
