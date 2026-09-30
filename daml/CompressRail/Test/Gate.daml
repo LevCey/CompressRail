@@ -1,0 +1,229 @@
+-- Tests for package-bound execution (CompressRail.Gate).
+--
+-- The ring A–B, B–C, C–A is split into three pair permits. The happy path executes
+-- the whole package through the gate. Every other test injects one attack or fault
+-- and asserts that nothing changes: all three original trades survive and no new
+-- leg exists. Visibility (which node receives which subtree) cannot be observed
+-- from Daml Script; it is measured on a real participant separately.
+module CompressRail.Test.Gate where
+
+import Daml.Script
+import DA.Time (hours, addRelTime)
+import DA.Optional (fromSome)
+import DA.Text (isInfixOf)
+import CompressRail.Trade
+import CompressRail.Gate
+
+data Setup = Setup with
+  operator : Party
+  executor : Party
+  a : Party
+  b : Party
+  c : Party
+  tAB : ContractId BilateralTrade
+  tBC : ContractId BilateralTrade
+  tCA : ContractId BilateralTrade
+  pAB : ContractId ExecutionPermit
+  pBC : ContractId ExecutionPermit
+  pCA : ContractId ExecutionPermit
+  gate : ContractId BatchGate
+  disclosures : [Disclosure]
+  deadline : Time
+
+-- Each firm's complete bundle, salted.
+bundleOfA, bundleOfB, bundleOfC : BundleCommit
+bundleOfA = BundleCommit with hash = bundleHash ["rAB", "rCA"] "salt-a"; salt = "salt-a"
+bundleOfB = BundleCommit with hash = bundleHash ["rAB", "rBC"] "salt-b"; salt = "salt-b"
+bundleOfC = BundleCommit with hash = bundleHash ["rBC", "rCA"] "salt-c"; salt = "salt-c"
+
+-- A permit agreed by propose/accept, one acting party per submission.
+agreePermit : ExecutionPermit -> Script (ContractId ExecutionPermit)
+agreePermit p = do
+  prop <- submit p.cptyA $ createCmd PermitProposal with permit = p
+  submit p.cptyB $ exerciseCmd prop PermitProposal_Accept
+
+setup : Script Setup
+setup = do
+  operator <- allocateParty "Operator"
+  executor <- allocateParty "Executor"
+  a <- allocateParty "FirmA"
+  b <- allocateParty "FirmB"
+  c <- allocateParty "FirmC"
+
+  tAB <- submit (actAs [a, b]) $ createCmd BilateralTrade with
+           cptyA = a; cptyB = b; tradeRef = "t1"; terms = "enc-ab"; commitment = "h-ab"; auditors = []
+  tBC <- submit (actAs [b, c]) $ createCmd BilateralTrade with
+           cptyA = b; cptyB = c; tradeRef = "t2"; terms = "enc-bc"; commitment = "h-bc"; auditors = []
+  tCA <- submit (actAs [c, a]) $ createCmd BilateralTrade with
+           cptyA = c; cptyB = a; tradeRef = "t3"; terms = "enc-ca"; commitment = "h-ca"; auditors = []
+
+  now <- getTime
+  let deadline = addRelTime now (hours 4)
+      permit x y ref td legs bx by = ExecutionPermit with
+        cptyA = x; cptyB = y; executor; gateId = "g1"; permitRef = ref
+        teardown = td; legs; bundleA = bx; bundleB = by; deadline
+  -- A–B: tear up the A–B trade and create the net 40 leg.
+  pAB <- agreePermit $ permit a b "rAB" [tAB]
+           [NewLeg with cptyA = a; cptyB = b; tradeRef = "n1"; terms = "enc-40"; commitment = "h-40"]
+           bundleOfA bundleOfB
+  pBC <- agreePermit $ permit b c "rBC" [tBC] [] bundleOfB bundleOfC
+  pCA <- agreePermit $ permit c a "rCA" [tCA] [] bundleOfC bundleOfA
+
+  gate <- submit executor $ createCmd BatchGate with
+            executor; operator; gateId = "g1"; permitRefs = ["rAB", "rBC", "rCA"]; deadline
+
+  -- The operator's node holds none of these contracts, so it submits with them
+  -- disclosed: the permits from the executor, the trades from the firms.
+  ds <- map fromSome <$> sequence
+          [ queryDisclosure executor pAB, queryDisclosure executor pBC, queryDisclosure executor pCA
+          , queryDisclosure a tAB, queryDisclosure b tBC, queryDisclosure c tCA ]
+  pure Setup with operator; executor; a; b; c; tAB; tBC; tCA; pAB; pBC; pCA; gate; disclosures = ds; deadline
+
+runGate : Setup -> ContractId BatchGate -> [ContractId ExecutionPermit] -> Script [ContractId BilateralTrade]
+runGate s g ps = submit (actAs s.operator <> discloseMany s.disclosures) $ exerciseCmd g Gate_Execute with permits = ps
+
+-- An attack must be rejected for the reason under test, not for some unrelated one.
+failGate : Setup -> ContractId BatchGate -> [ContractId ExecutionPermit] -> Text -> Script ()
+failGate s g ps why = failWith s.operator s.disclosures (exerciseCmd g Gate_Execute with permits = ps) why
+
+failWith : Party -> [Disclosure] -> Commands a -> Text -> Script ()
+failWith p ds cmd why = do
+  r <- trySubmit (actAs p <> discloseMany ds) cmd
+  case r of
+    Right _ -> abort ("expected a rejection: " <> why)
+    Left e -> assertMsg ("rejected for the wrong reason, expected '" <> why <> "', got: " <> show e) (why `isInfixOf` show e)
+
+-- Nothing moved: all three originals alive, no firm holds a new leg.
+assertUntouched : Setup -> Script ()
+assertUntouched s = do
+  aView <- query @BilateralTrade s.a
+  assertMsg "A must still hold exactly its two original trades" (length aView == 2)
+  bView <- query @BilateralTrade s.b
+  assertMsg "B must still hold exactly its two original trades" (length bView == 2)
+  cView <- query @BilateralTrade s.c
+  assertMsg "C must still hold exactly its two original trades" (length cView == 2)
+  opView <- query @BilateralTrade s.operator
+  assertMsg "operator must be a stakeholder of no trade" (null opView)
+
+-- The whole package executes atomically: three trades torn up, one net leg.
+happyPath : Script ()
+happyPath = do
+  s <- setup
+  created <- runGate s s.gate [s.pAB, s.pBC, s.pCA]
+  assertMsg "exactly one replacement leg" (length created == 1)
+  aView <- query @BilateralTrade s.a
+  assertMsg "A holds only the net leg" (map (\(_, t) -> t.tradeRef) aView == ["n1"])
+  bView <- query @BilateralTrade s.b
+  assertMsg "B holds only the net leg" (map (\(_, t) -> t.tradeRef) bView == ["n1"])
+  cView <- query @BilateralTrade s.c
+  assertMsg "C nets out entirely" (null cView)
+  opView <- query @BilateralTrade s.operator
+  assertMsg "operator is a stakeholder of no trade" (null opView)
+
+-- The operator cannot use a firm pair's authority directly.
+operatorCannotExercisePermit : Script ()
+operatorCannotExercisePermit = do
+  s <- setup
+  r <- trySubmit (actAs s.operator <> discloseMany s.disclosures) $ exerciseCmd s.pAB Permit_Execute
+  case r of
+    Right _ -> abort "the operator exercised a permit"
+    Left e -> assertMsg ("expected an authorization failure, got: " <> show e) ("uthoriz" `isInfixOf` show e)
+  assertUntouched s
+
+-- The operator passes only part of the approved package.
+subsetRejected : Script ()
+subsetRejected = do
+  s <- setup
+  failGate s s.gate [s.pAB, s.pBC] "differ from the approved package"
+  failGate s s.gate [s.pAB] "differ from the approved package"
+  assertUntouched s
+
+-- The executor creates a gate that leaves out a pair. Even with the gate's own
+-- list satisfied, A's and C's bundle commitments name the missing permit.
+omittedPairRejected : Script ()
+omittedPairRejected = do
+  s <- setup
+  g2 <- submit s.executor $ createCmd BatchGate with
+          executor = s.executor; operator = s.operator; gateId = "g1"; permitRefs = ["rAB", "rBC"]; deadline = s.deadline
+  failGate s g2 [s.pAB, s.pBC] "incomplete bundle"
+  assertUntouched s
+
+-- The same permit twice.
+duplicateRejected : Script ()
+duplicateRejected = do
+  s <- setup
+  failGate s s.gate [s.pAB, s.pAB, s.pBC, s.pCA] "listed twice"
+  assertUntouched s
+
+-- A permit from another package, with the right reference but the wrong gate.
+substitutionRejected : Script ()
+substitutionRejected = do
+  s <- setup
+  other <- agreePermit ExecutionPermit with
+             cptyA = s.a; cptyB = s.b; executor = s.executor; gateId = "g-other"; permitRef = "rAB"
+             teardown = [s.tAB]; legs = []; bundleA = bundleOfA; bundleB = bundleOfB; deadline = s.deadline
+  dOther <- fromSome <$> queryDisclosure s.executor other
+  failWith s.operator (dOther :: s.disclosures) (exerciseCmd s.gate Gate_Execute with permits = [other, s.pBC, s.pCA])
+    "different gate"
+  assertUntouched s
+
+-- A permit whose teardown reaches outside its pair.
+outOfPairRejected : Script ()
+outOfPairRejected = do
+  s <- setup
+  bad <- agreePermit ExecutionPermit with
+           cptyA = s.a; cptyB = s.b; executor = s.executor; gateId = "g2"; permitRef = "rX"
+           teardown = [s.tAB, s.tBC]; legs = []
+           bundleA = BundleCommit with hash = bundleHash ["rX"] "sa"; salt = "sa"
+           bundleB = BundleCommit with hash = bundleHash ["rX"] "sb"; salt = "sb"
+           deadline = s.deadline
+  g2 <- submit s.executor $ createCmd BatchGate with
+          executor = s.executor; operator = s.operator; gateId = "g2"; permitRefs = ["rX"]; deadline = s.deadline
+  dBad <- fromSome <$> queryDisclosure s.executor bad
+  failWith s.operator (dBad :: s.disclosures) (exerciseCmd g2 Gate_Execute with permits = [bad])
+    "outside its pair"
+  assertUntouched s
+
+-- A firm commits to different bundles in its two permits.
+inconsistentBundleRejected : Script ()
+inconsistentBundleRejected = do
+  s <- setup
+  -- Re-agree C–A with a different commitment for A.
+  submit s.c $ exerciseCmd s.pCA Permit_Withdraw with actor = s.c
+  pCA' <- agreePermit ExecutionPermit with
+            cptyA = s.c; cptyB = s.a; executor = s.executor; gateId = "g1"; permitRef = "rCA"
+            teardown = [s.tCA]; legs = []; bundleA = bundleOfC
+            bundleB = BundleCommit with hash = bundleHash ["rAB", "rCA"] "other-salt"; salt = "other-salt"
+            deadline = s.deadline
+  d' <- fromSome <$> queryDisclosure s.executor pCA'
+  failWith s.operator (d' :: s.disclosures) (exerciseCmd s.gate Gate_Execute with permits = [s.pAB, s.pBC, pCA'])
+    "inconsistent bundle"
+  assertUntouched s
+
+-- A firm withdraws before execution; the package cannot run.
+withdrawalBlocks : Script ()
+withdrawalBlocks = do
+  s <- setup
+  submit s.c $ exerciseCmd s.pCA Permit_Withdraw with actor = s.c
+  failGate s s.gate [s.pAB, s.pBC, s.pCA] ""
+  assertUntouched s
+
+-- Past the deadline nothing executes.
+expiryBlocks : Script ()
+expiryBlocks = do
+  s <- setup
+  passTime (hours 5)
+  failGate s s.gate [s.pAB, s.pBC, s.pCA] "past its deadline"
+  assertUntouched s
+
+-- A gate and its permits are one-use.
+replayRejected : Script ()
+replayRejected = do
+  s <- setup
+  _ <- runGate s s.gate [s.pAB, s.pBC, s.pCA]
+  failGate s s.gate [s.pAB, s.pBC, s.pCA] ""
+  g2 <- submit s.executor $ createCmd BatchGate with
+          executor = s.executor; operator = s.operator; gateId = "g1"; permitRefs = ["rAB", "rBC", "rCA"]; deadline = s.deadline
+  failGate s g2 [s.pAB, s.pBC, s.pCA] ""
+  cView <- query @BilateralTrade s.c
+  assertMsg "C still holds nothing after the replay attempts" (null cView)

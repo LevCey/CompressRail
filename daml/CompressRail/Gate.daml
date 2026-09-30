@@ -1,0 +1,162 @@
+-- Package-bound execution: each pair of firms signs a permit for its own trades
+-- only, and a dedicated execution party can use those permits only through a
+-- one-use gate that executes the complete approved package or nothing.
+--
+-- Why this shape. In `CompressionCycle` one contract carries every firm's
+-- authority, so every firm is an informee of `Execute` and receives the whole
+-- tree. Here a firm lends its authority only inside its own pair's permit, so it
+-- is an informee of that subtree alone. The price is a new party, the executor:
+-- it controls every permit and signs the gate, so the nodes hosting it receive
+-- the whole tree.
+--
+-- What the gate enforces.
+--   * The operator cannot exercise a permit: the controller is the executor.
+--   * The gate executes exactly the permits it was created for, each once.
+--   * No firm is left half-compressed: each firm commits, in every one of its
+--     permits, to a salted hash of the full set of its permit references, and
+--     the gate recomputes that hash from the permits it is about to execute.
+-- What it does not enforce. The executor itself can exercise a single permit
+-- outside the gate. That is the trust boundary: the executor must act only
+-- through governed, audited actions, and no single operator may control it.
+module CompressRail.Gate where
+
+import DA.List (sort, dedup, unique)
+import DA.Foldable (forA_)
+import DA.Text (intercalate, sha256)
+import CompressRail.Types
+import CompressRail.Trade
+
+-- A firm's commitment to its complete bundle of permits in one package: the
+-- SHA-256 of its sorted permit references and a salt. The salt keeps a
+-- counterparty, which sees this value on the permit it shares, from learning
+-- anything about the firm's other permits.
+data BundleCommit = BundleCommit
+  with
+    hash : Text
+    salt : Text
+  deriving (Eq, Show, Ord)
+
+-- The canonical hash a firm computes off-ledger and the gate recomputes on-ledger.
+bundleHash : [Text] -> Text -> Text
+bundleHash refs salt = sha256 (intercalate "|" (sort refs) <> "#" <> salt)
+
+-- A replacement trade a permit creates, signed by the permit's two firms.
+data NewLeg = NewLeg
+  with
+    cptyA : Party
+    cptyB : Party
+    tradeRef : TradeRef
+    terms : Ciphertext
+    commitment : Commitment
+  deriving (Eq, Show)
+
+samePair : Party -> Party -> Party -> Party -> Bool
+samePair x y p q = (x == p && y == q) || (x == q && y == p)
+
+-- One pair's part of a package: the trades between the two firms it tears up and
+-- the replacement legs between them it creates.
+template ExecutionPermit
+  with
+    cptyA : Party
+    cptyB : Party
+    executor : Party
+    gateId : Text
+    permitRef : Text
+    teardown : [ContractId BilateralTrade]
+    legs : [NewLeg]
+    bundleA : BundleCommit
+    bundleB : BundleCommit
+    deadline : Time
+  where
+    signatory cptyA, cptyB
+    observer executor
+    ensure cptyA /= cptyB && all (\l -> samePair l.cptyA l.cptyB cptyA cptyB) legs
+
+    choice Permit_Execute : [ContractId BilateralTrade]
+      controller executor
+      do
+        now <- getTime
+        assertMsg "permit is past its deadline" (now <= deadline)
+        -- Every trade torn up must be between this pair. Archiving needs the
+        -- trade's signatories' authority, which is exactly this permit's.
+        forA_ teardown $ \cid -> do
+          t <- fetch cid
+          assertMsg "permit tears up a trade outside its pair" (samePair t.cptyA t.cptyB cptyA cptyB)
+          archive cid
+        forA legs $ \l -> create BilateralTrade with
+          cptyA = l.cptyA
+          cptyB = l.cptyB
+          tradeRef = l.tradeRef
+          terms = l.terms
+          commitment = l.commitment
+          auditors = []
+
+    -- Either firm can withdraw before execution; the package then cannot execute.
+    choice Permit_Withdraw : ()
+      with
+        actor : Party
+      controller actor
+      do
+        assertMsg "only a counterparty can withdraw" (actor == cptyA || actor == cptyB)
+
+-- The permit as proposed by one firm, accepted by the other, so it can be agreed
+-- across two participant nodes (one acting party per submission).
+template PermitProposal
+  with
+    permit : ExecutionPermit
+  where
+    signatory permit.cptyA
+    observer permit.cptyB
+
+    choice PermitProposal_Accept : ContractId ExecutionPermit
+      controller permit.cptyB
+      do create permit
+
+    choice PermitProposal_Decline : ()
+      controller permit.cptyB
+      do pure ()
+
+    choice PermitProposal_Withdraw : ()
+      controller permit.cptyA
+      do pure ()
+
+-- A one-use gate over the exact set of permits in an approved package. Created by
+-- the executor; executed by the operator; the executor's authority reaches the
+-- permits only through this choice.
+template BatchGate
+  with
+    executor : Party
+    operator : Party
+    gateId : Text
+    permitRefs : [Text]
+    deadline : Time
+  where
+    signatory executor
+    observer operator
+    ensure unique permitRefs && not (null permitRefs)
+
+    choice Gate_Execute : [ContractId BilateralTrade]
+      with
+        permits : [ContractId ExecutionPermit]
+      controller operator
+      do
+        now <- getTime
+        assertMsg "gate is past its deadline" (now <= deadline)
+        ps <- forA permits fetch
+        assertMsg "a permit belongs to a different gate"
+          (all (\p -> p.gateId == gateId && p.executor == executor) ps)
+        let refs = map (.permitRef) ps
+        assertMsg "a permit is listed twice" (unique refs)
+        assertMsg "permits differ from the approved package" (sort refs == sort permitRefs)
+        -- Per-firm completeness: each firm's permits carry one bundle commitment,
+        -- and it must match the permits executed here.
+        let firms = dedup (concatMap (\p -> [p.cptyA, p.cptyB]) ps)
+        forA_ firms $ \f -> do
+          let mine = filter (\p -> p.cptyA == f || p.cptyB == f) ps
+              bundles = dedup (map (\p -> if p.cptyA == f then p.bundleA else p.bundleB) mine)
+          case bundles of
+            [b] -> assertMsg ("incomplete bundle for " <> show f)
+                     (bundleHash (map (.permitRef) mine) b.salt == b.hash)
+            _ -> abort ("inconsistent bundle commitments for " <> show f)
+        created <- forA permits (\cid -> exercise cid Permit_Execute)
+        pure (concat created)
