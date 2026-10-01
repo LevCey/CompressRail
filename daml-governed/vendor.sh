@@ -1,37 +1,30 @@
 #!/usr/bin/env bash
-# Fetches the Decentralization Manager governance Daml packages at a pinned commit
-# and builds them locally, so `daml-governed` can depend on them in tests.
+# Fetches the released Decentralization Manager governance DARs at a pinned commit,
+# so `daml-governed` builds against the exact packages a Decentralization Manager
+# node distributes (same package ids), and checks their SHA-256.
 #
-# Pinned: DLC-link/decentralization-manager v1.12.0 (Apache-2.0).
-# The sources are built with this project's SDK, so the resulting package ids
-# differ from the DARs a Decentralization Manager v1.12.0 node distributes. That is
-# fine for Daml Script tests; a DevNet deployment must use the node's own DARs.
+# Pinned: DLC-link/decentralization-manager v1.12.0 (Apache-2.0), `releases/v1/`.
 set -euo pipefail
 
 COMMIT="4d650edbbf851852311a4921af8f5df608450a6b" # tag v1.12.0
-REPO="https://raw.githubusercontent.com/DLC-link/decentralization-manager/${COMMIT}"
-SDK="3.5.1"
+REPO="https://raw.githubusercontent.com/DLC-link/decentralization-manager/${COMMIT}/releases/v1"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 VENDOR="${HERE}/.vendor"
-DPM="${DPM:-$HOME/.dpm/bin/dpm}"
 
-fetch() { # fetch <repo-path>
-  mkdir -p "${VENDOR}/$(dirname "$1")"
-  curl -fsSL -m 60 -o "${VENDOR}/$1" "${REPO}/$1"
-}
+# file name, SHA-256 of the file at the pinned commit
+DARS=(
+  "governance-action-v1-0.1.0.dar 4fc7912df4a0aeea3cfcc6ba07c880192a5fa88f7c75ed04b922602461b1e485"
+  "governance-core-v1-0.1.0.dar b8d05903e63288d4114632f41386491cea215e177183514ea032fe35d24a9544"
+)
 
-echo "→ fetching governance packages at ${COMMIT:0:12}"
-fetch daml/governance-action-v1/daml.yaml
-fetch daml/governance-action-v1/daml/Governance/Action.daml
-fetch daml/governance-core/daml.yaml
-for m in Confirmation ExecutionResult GenericVote Rules; do
-  fetch "daml/governance-core/daml/Governance/${m}.daml"
+mkdir -p "${VENDOR}"
+for entry in "${DARS[@]}"; do
+  read -r name sha <<<"${entry}"
+  curl -fsSL -m 120 -o "${VENDOR}/${name}" "${REPO}/${name}"
+  got="$(sha256sum "${VENDOR}/${name}" | cut -d' ' -f1)"
+  if [[ "${got}" != "${sha}" ]]; then
+    echo "SHA-256 mismatch for ${name}: got ${got}, expected ${sha}" >&2
+    exit 1
+  fi
+  echo "  ${name}  ${got:0:16}…  ok"
 done
-fetch daml/dars/splice-util-0.1.4.dar
-
-echo "→ building with SDK ${SDK}"
-for pkg in governance-action-v1 governance-core; do
-  sed -i -E "s/^sdk-version: .*/sdk-version: ${SDK}/" "${VENDOR}/daml/${pkg}/daml.yaml"
-  (cd "${VENDOR}/daml/${pkg}" && "${DPM}" build >/dev/null)
-done
-ls "${VENDOR}"/daml/governance-*/.daml/dist/*.dar

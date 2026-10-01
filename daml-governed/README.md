@@ -20,11 +20,11 @@ action, they can still execute a subset of approved permits, each exactly as app
 ## Build and test
 
 ```
-./vendor.sh                       # fetches the governance packages at v1.12.0 and builds them
+./vendor.sh                       # fetches the released governance DARs at v1.12.0, SHA-256 checked
 (cd ../daml && dpm build)         # compressrail
 dpm build                         # compressrail-governed
 (cd test && dpm test)
 ```
 
-The vendored packages are built with this project's SDK, so their package ids differ from the DARs a
-Decentralization Manager node distributes. A deployment must use the node's own DARs.
+These are the same DAR files a Decentralization Manager v1.12.0 node distributes, so the package ids
+match a real deployment.

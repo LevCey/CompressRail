@@ -1,7 +1,7 @@
 # CompressRail's cycle execution as a Decentralization Manager governed action.
 #
 # Depends on the compressrail model and on the governance-action-v1 interface,
-# which `./vendor.sh` fetches at a pinned commit and builds into `.vendor/`.
+# which `./vendor.sh` fetches (the released DAR, SHA-256 checked) into `.vendor/`.
 # Templates only; the tests live in `test/`.
 sdk-version: 3.5.1
 name: compressrail-governed
@@ -12,6 +12,6 @@ dependencies:
   - daml-stdlib
 data-dependencies:
   - ../daml/.daml/dist/compressrail-0.0.3.dar
-  - .vendor/daml/governance-action-v1/.daml/dist/governance-action-v1-0.1.0.dar
+  - .vendor/governance-action-v1-0.1.0.dar
 build-options:
   - -Wno-upgrade-interfaces
