@@ -1,0 +1,19 @@
+# Daml Script tests for the governed cycle execution, run against the real
+# Decentralization Manager GovernanceRules (built by ../vendor.sh).
+sdk-version: 3.5.1
+name: compressrail-governed-test
+version: 0.0.1
+source: daml
+dependencies:
+  - daml-prim
+  - daml-stdlib
+  - daml-script
+data-dependencies:
+  - ../../daml/.daml/dist/compressrail-0.0.3.dar
+  - ../.daml/dist/compressrail-governed-0.0.1.dar
+  - ../.vendor/daml/governance-action-v1/.daml/dist/governance-action-v1-0.1.0.dar
+  - ../.vendor/daml/governance-core/.daml/dist/governance-core-v1-0.1.0.dar
+  - ../.vendor/daml/dars/splice-util-0.1.4.dar
+build-options:
+  - -Wno-upgrade-interfaces
+  - -Wno-template-interface-depends-on-daml-script

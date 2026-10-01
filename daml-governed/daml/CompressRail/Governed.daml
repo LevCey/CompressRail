@@ -1,0 +1,45 @@
+-- Cycle execution as a governed action of a Decentralized Party.
+--
+-- The executor `E` of `CompressRail.Gate` becomes the governance party of a
+-- Decentralization Manager `GovernanceRules` contract. A member proposes this
+-- action; once a threshold of members has confirmed, `GovernanceRules` exercises
+-- `GovernableAction_Execute` with `E`'s authority, and `executeImpl` runs the
+-- same package checks as `BatchGate` before executing every permit.
+--
+-- Governance approval does not replace those checks: an approved proposal for an
+-- incomplete package still fails. What governance adds is that no single member
+-- can make `E` execute anything.
+--
+-- Visibility: the proposal's stakeholders are the proposer and `E`, so the firms
+-- never see it, including the bundle salts it carries. Each firm remains an
+-- informee only of its own pair's permit.
+module CompressRail.Governed where
+
+import DA.List (unique)
+import Governance.Action
+import CompressRail.Gate
+
+template CycleExecutionProposal
+  with
+    governanceParty : Party  -- E
+    proposer : Party         -- a governance member
+    gateId : Text
+    permitRefs : [Text]
+    permits : [ContractId ExecutionPermit]
+    salts : [(Party, Text)]  -- each firm's bundle salt, supplied off-ledger
+    deadline : Time
+    description : Text
+  where
+    signatory proposer
+    observer governanceParty
+    ensure unique permitRefs && not (null permitRefs) && length permits == length permitRefs
+
+    interface instance GovernableAction for CycleExecutionProposal where
+      view = GovernableActionView with
+        governanceParty
+        proposer
+        actionLabel = "ExecuteCompressionCycle"
+        description
+      executeImpl = do
+        _ <- executePackage governanceParty gateId permitRefs deadline permits salts
+        pure ()

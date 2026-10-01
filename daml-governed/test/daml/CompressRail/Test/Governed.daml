@@ -1,0 +1,265 @@
+-- Governed cycle execution, against the real Decentralization Manager
+-- `GovernanceRules` (v1.12.0 sources).
+--
+-- Two members (the operator's member and an independent member), threshold 2,
+-- governance party E. In Canton each member hosts E with readAs rights; Daml
+-- Script simulates that with `actAs member <> readAs E`, as the framework's own
+-- tests do. Each rejection is checked for its reason, not only that it happened.
+module CompressRail.Test.Governed where
+
+import Daml.Script
+import DA.Set qualified as Set
+import DA.Text (isInfixOf)
+import DA.Time (hours, minutes, addRelTime)
+import DA.Optional (fromSome)
+import DA.Foldable (forA_)
+
+import Governance.Action
+import Governance.Confirmation
+import Governance.Rules
+import Governance.ExecutionResult
+import CompressRail.Trade
+import CompressRail.Gate
+import CompressRail.Governed
+
+data Setup = Setup with
+  e : Party
+  m1 : Party       -- the operator's member
+  m2 : Party       -- the independent member
+  outsider : Party
+  a : Party
+  b : Party
+  c : Party
+  rules : ContractId GovernanceRules
+  pAB : ContractId ExecutionPermit
+  pBC : ContractId ExecutionPermit
+  pCA : ContractId ExecutionPermit
+  trades : [Disclosure]  -- the firms' trades, which E's nodes do not hold
+  deadline : Time
+
+saltsOf : Setup -> [(Party, Text)]
+saltsOf s = [(s.a, "salt-a"), (s.b, "salt-b"), (s.c, "salt-c")]
+
+asMember : Setup -> Party -> SubmitOptions
+asMember s m = actAs m <> readAs s.e
+
+agreePermit : ExecutionPermit -> Script (ContractId ExecutionPermit)
+agreePermit p = do
+  prop <- submit p.cptyA $ createCmd PermitProposal with permit = p
+  submit p.cptyB $ exerciseCmd prop PermitProposal_Accept
+
+setup : Script Setup
+setup = do
+  e <- allocateParty "E"
+  m1 <- allocateParty "OperatorMember"
+  m2 <- allocateParty "IndependentMember"
+  outsider <- allocateParty "Outsider"
+  a <- allocateParty "FirmA"
+  b <- allocateParty "FirmB"
+  c <- allocateParty "FirmC"
+  rules <- submit e $ createCmd GovernanceRules with
+    governanceParty = e
+    members = Set.fromList [m1, m2]
+    threshold = 2
+    actionConfirmationTimeout = minutes 30
+    additionalProposers = None
+
+  tAB <- submit (actAs [a, b]) $ createCmd BilateralTrade with
+           cptyA = a; cptyB = b; tradeRef = "t1"; terms = "enc-ab"; commitment = "h-ab"; auditors = []
+  tBC <- submit (actAs [b, c]) $ createCmd BilateralTrade with
+           cptyA = b; cptyB = c; tradeRef = "t2"; terms = "enc-bc"; commitment = "h-bc"; auditors = []
+  tCA <- submit (actAs [c, a]) $ createCmd BilateralTrade with
+           cptyA = c; cptyB = a; tradeRef = "t3"; terms = "enc-ca"; commitment = "h-ca"; auditors = []
+
+  now <- getTime
+  let deadline = addRelTime now (hours 4)
+      permit x y ref td legs hx hy = ExecutionPermit with
+        cptyA = x; cptyB = y; executor = e; gateId = "g1"; permitRef = ref
+        teardown = td; legs; bundleA = hx; bundleB = hy; deadline
+  pAB <- agreePermit $ permit a b "rAB" [tAB]
+           [NewLeg with cptyA = a; cptyB = b; tradeRef = "n1"; terms = "enc-40"; commitment = "h-40"]
+           (bundleHash ["rAB", "rCA"] "salt-a") (bundleHash ["rAB", "rBC"] "salt-b")
+  pBC <- agreePermit $ permit b c "rBC" [tBC] []
+           (bundleHash ["rAB", "rBC"] "salt-b") (bundleHash ["rBC", "rCA"] "salt-c")
+  pCA <- agreePermit $ permit c a "rCA" [tCA] []
+           (bundleHash ["rBC", "rCA"] "salt-c") (bundleHash ["rAB", "rCA"] "salt-a")
+
+  trades <- map fromSome <$> sequence [queryDisclosure a tAB, queryDisclosure b tBC, queryDisclosure c tCA]
+  pure Setup with ..
+
+-- The operator's member proposes executing a set of permits.
+propose : Setup -> [Text] -> [ContractId ExecutionPermit] -> Script (ContractId GovernableAction)
+propose s refs ps = proposeAs s s.m1 refs ps
+
+proposeAs : Setup -> Party -> [Text] -> [ContractId ExecutionPermit] -> Script (ContractId GovernableAction)
+proposeAs s who refs ps = do
+  cid <- submit who $ createCmd CycleExecutionProposal with
+    governanceParty = s.e; proposer = who; gateId = "g1"; permitRefs = refs; permits = ps
+    salts = saltsOf s; deadline = s.deadline; description = "compression cycle g1"
+  pure (toInterfaceContractId @GovernableAction cid)
+
+fullPackage : Setup -> Script (ContractId GovernableAction)
+fullPackage s = propose s ["rAB", "rBC", "rCA"] [s.pAB, s.pBC, s.pCA]
+
+confirm : Setup -> Party -> ContractId GovernableAction -> Script (ContractId GovernanceConfirmation)
+confirm s m prop = do
+  r <- submit (asMember s m) $ exerciseCmd s.rules GovernanceRules_ConfirmAction with
+         confirmer = m; actionProposalCid = prop
+  pure r.confirmationCid
+
+executeCmd : Setup -> Party -> ContractId GovernableAction -> [ContractId GovernanceConfirmation] -> Commands ExecuteConfirmedActionResult
+executeCmd s m prop cs = exerciseCmd s.rules GovernanceRules_ExecuteConfirmedAction with
+  executor = m; actionProposalCid = prop; confirmations = cs
+
+execute : Setup -> Party -> ContractId GovernableAction -> [ContractId GovernanceConfirmation] -> Script ()
+execute s m prop cs = do
+  _ <- submit (asMember s m <> discloseMany s.trades) (executeCmd s m prop cs)
+  pure ()
+
+-- An attempt that must be rejected for the stated reason.
+mustFail : SubmitOptions -> Commands x -> Text -> Script ()
+mustFail opts cmd why = do
+  r <- trySubmit opts cmd
+  case r of
+    Right _ -> abort ("expected a rejection: " <> why)
+    Left err -> assertMsg ("rejected for the wrong reason, expected '" <> why <> "', got: " <> show err)
+                  (why `isInfixOf` show err)
+
+failExecute : Setup -> Party -> ContractId GovernableAction -> [ContractId GovernanceConfirmation] -> Text -> Script ()
+failExecute s m prop cs why = mustFail (asMember s m <> discloseMany s.trades) (executeCmd s m prop cs) why
+
+assertUntouched : Setup -> Script ()
+assertUntouched s = do
+  forA_ [s.a, s.b, s.c] $ \f -> do
+    v <- query @BilateralTrade f
+    assertMsg "each firm must still hold exactly its two original trades" (length v == 2)
+  ev <- query @BilateralTrade s.e
+  assertMsg "E must be a stakeholder of no trade" (null ev)
+
+-- Two of two members confirm; the whole package executes atomically.
+happyPath : Script ()
+happyPath = do
+  s <- setup
+  prop <- fullPackage s
+  c1 <- confirm s s.m1 prop
+  c2 <- confirm s s.m2 prop
+  execute s s.m2 prop [c1, c2]
+  aView <- query @BilateralTrade s.a
+  assertMsg "A holds only the net leg" (map (\(_, t) -> t.tradeRef) aView == ["n1"])
+  bView <- query @BilateralTrade s.b
+  assertMsg "B holds only the net leg" (map (\(_, t) -> t.tradeRef) bView == ["n1"])
+  cView <- query @BilateralTrade s.c
+  assertMsg "C nets out entirely" (null cView)
+
+-- Shared control: one confirmation is below the threshold.
+oneConfirmationIsNotEnough : Script ()
+oneConfirmationIsNotEnough = do
+  s <- setup
+  prop <- fullPackage s
+  c1 <- confirm s s.m1 prop
+  failExecute s s.m1 prop [c1] "Enough confirmations to execute action"
+  assertUntouched s
+
+-- The same member cannot count twice.
+duplicateConfirmerRejected : Script ()
+duplicateConfirmerRejected = do
+  s <- setup
+  prop <- fullPackage s
+  c1 <- confirm s s.m1 prop
+  c1' <- confirm s s.m1 prop
+  failExecute s s.m1 prop [c1, c1'] "No duplicate confirmers"
+  assertUntouched s
+
+-- A non-member can neither confirm nor have its proposal confirmed.
+outsiderCannotConfirm : Script ()
+outsiderCannotConfirm = do
+  s <- setup
+  prop <- fullPackage s
+  mustFail (actAs s.outsider <> readAs s.e)
+    (exerciseCmd s.rules GovernanceRules_ConfirmAction with confirmer = s.outsider; actionProposalCid = prop)
+    "Confirmer is a governance member"
+  assertUntouched s
+
+outsiderProposalRejected : Script ()
+outsiderProposalRejected = do
+  s <- setup
+  prop <- proposeAs s s.outsider ["rAB", "rBC", "rCA"] [s.pAB, s.pBC, s.pCA]
+  mustFail (asMember s s.m1)
+    (exerciseCmd s.rules GovernanceRules_ConfirmAction with confirmer = s.m1; actionProposalCid = prop)
+    "Proposer is authorized"
+  assertUntouched s
+
+-- A member cannot act as E directly: not on a permit, not on the action.
+memberCannotExercisePermit : Script ()
+memberCannotExercisePermit = do
+  s <- setup
+  mustFail (asMember s s.m1 <> discloseMany s.trades) (exerciseCmd s.pAB Permit_Execute) "uthoriz"
+  assertUntouched s
+
+memberCannotExecuteActionDirectly : Script ()
+memberCannotExecuteActionDirectly = do
+  s <- setup
+  prop <- fullPackage s
+  mustFail (asMember s s.m1 <> discloseMany s.trades) (exerciseCmd prop GovernableAction_Execute) "uthoriz"
+  assertUntouched s
+
+-- Governance approval does not replace the package checks: both members approve
+-- a package that leaves out C–A, and it still fails on A's bundle.
+approvedIncompletePackageFails : Script ()
+approvedIncompletePackageFails = do
+  s <- setup
+  prop <- propose s ["rAB", "rBC"] [s.pAB, s.pBC]
+  c1 <- confirm s s.m1 prop
+  c2 <- confirm s s.m2 prop
+  failExecute s s.m2 prop [c1, c2] "incomplete bundle"
+  assertUntouched s
+
+-- A firm withdrawing after both members approved still stops the whole package.
+withdrawalAfterApprovalBlocks : Script ()
+withdrawalAfterApprovalBlocks = do
+  s <- setup
+  prop <- fullPackage s
+  c1 <- confirm s s.m1 prop
+  c2 <- confirm s s.m2 prop
+  submit s.c $ exerciseCmd s.pCA Permit_Withdraw with actor = s.c
+  failExecute s s.m2 prop [c1, c2] "NotActive"
+  assertUntouched s
+
+-- After the deadline nothing executes, even with fresh valid confirmations.
+expiryBlocks : Script ()
+expiryBlocks = do
+  s <- setup
+  prop <- fullPackage s
+  passTime (hours 5)
+  c1 <- confirm s s.m1 prop
+  c2 <- confirm s s.m2 prop
+  failExecute s s.m2 prop [c1, c2] "past its deadline"
+  assertUntouched s
+
+-- One execution per proposal and per permit.
+replayRejected : Script ()
+replayRejected = do
+  s <- setup
+  prop <- fullPackage s
+  c1 <- confirm s s.m1 prop
+  c2 <- confirm s s.m2 prop
+  execute s s.m2 prop [c1, c2]
+  -- The executed proposal is gone, so it cannot even be confirmed again.
+  mustFail (asMember s s.m1)
+    (exerciseCmd s.rules GovernanceRules_ConfirmAction with confirmer = s.m1; actionProposalCid = prop) "NotActive"
+  -- A fresh proposal over the same, now consumed, permits fails at execution.
+  prop2 <- fullPackage s
+  d1 <- confirm s s.m1 prop2
+  d2 <- confirm s s.m2 prop2
+  failExecute s s.m2 prop2 [d1, d2] "NotActive"
+  cView <- query @BilateralTrade s.c
+  assertMsg "C still holds nothing after the replay attempts" (null cView)
+
+-- The firms never see the proposal, nor the salts it carries.
+firmsDoNotSeeTheProposal : Script ()
+firmsDoNotSeeTheProposal = do
+  s <- setup
+  prop <- fullPackage s
+  forA_ [s.a, s.b, s.c] $ \f -> do
+    seen <- queryContractId f (fromInterfaceContractId @CycleExecutionProposal prop)
+    assertMsg "a firm must not see the execution proposal" (seen == None)

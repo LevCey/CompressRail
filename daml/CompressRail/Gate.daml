@@ -139,27 +139,34 @@ template BatchGate
         permits : [ContractId ExecutionPermit]
         salts : [(Party, Text)]  -- each firm's bundle salt, supplied off-ledger
       controller operator
-      do
-        now <- getTime
-        assertMsg "gate is past its deadline" (now <= deadline)
-        ps <- forA permits fetch
-        assertMsg "a permit belongs to a different gate"
-          (all (\p -> p.gateId == gateId && p.executor == executor) ps)
-        let refs = map (.permitRef) ps
-        assertMsg "a permit is listed twice" (unique refs)
-        assertMsg "permits differ from the approved package" (sort refs == sort permitRefs)
-        -- Per-firm completeness: each firm's permits carry one bundle commitment,
-        -- and it must match the permits executed here.
-        let firms = dedup (concatMap (\p -> [p.cptyA, p.cptyB]) ps)
-        forA_ firms $ \f -> do
-          let mine = filter (\p -> p.cptyA == f || p.cptyB == f) ps
-              bundles = dedup (map (\p -> if p.cptyA == f then p.bundleA else p.bundleB) mine)
-          salt <- case lookup f salts of
-            Some x -> pure x
-            None -> abort ("no bundle salt supplied for " <> show f)
-          case bundles of
-            [h] -> assertMsg ("incomplete bundle for " <> show f)
-                     (bundleHash (map (.permitRef) mine) salt == h)
-            _ -> abort ("inconsistent bundle commitments for " <> show f)
-        created <- forA permits (\cid -> exercise cid Permit_Execute)
-        pure (concat created)
+      do executePackage executor gateId permitRefs deadline permits salts
+
+-- The package checks and the execution, shared by `BatchGate` and by any governed
+-- action that holds the executor's authority (`daml-governed`). Runs with the
+-- executor's authority: it fetches the permits (the executor observes them) and
+-- exercises each permit's `Permit_Execute`, all in the caller's transaction.
+executePackage : Party -> Text -> [Text] -> Time -> [ContractId ExecutionPermit] -> [(Party, Text)] -> Update [ContractId BilateralTrade]
+executePackage executor gateId permitRefs deadline permits salts = do
+  now <- getTime
+  assertMsg "gate is past its deadline" (now <= deadline)
+  ps <- forA permits fetch
+  assertMsg "a permit belongs to a different gate"
+    (all (\p -> p.gateId == gateId && p.executor == executor) ps)
+  let refs = map (.permitRef) ps
+  assertMsg "a permit is listed twice" (unique refs)
+  assertMsg "permits differ from the approved package" (sort refs == sort permitRefs)
+  -- Per-firm completeness: each firm's permits carry one bundle commitment,
+  -- and it must match the permits executed here.
+  let firms = dedup (concatMap (\p -> [p.cptyA, p.cptyB]) ps)
+  forA_ firms $ \f -> do
+    let mine = filter (\p -> p.cptyA == f || p.cptyB == f) ps
+        bundles = dedup (map (\p -> if p.cptyA == f then p.bundleA else p.bundleB) mine)
+    salt <- case lookup f salts of
+      Some x -> pure x
+      None -> abort ("no bundle salt supplied for " <> show f)
+    case bundles of
+      [h] -> assertMsg ("incomplete bundle for " <> show f)
+               (bundleHash (map (.permitRef) mine) salt == h)
+      _ -> abort ("inconsistent bundle commitments for " <> show f)
+  created <- forA permits (\cid -> exercise cid Permit_Execute)
+  pure (concat created)
