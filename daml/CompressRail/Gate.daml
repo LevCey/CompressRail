@@ -15,6 +15,10 @@
 --   * No firm is left half-compressed: each firm commits, in every one of its
 --     permits, to a salted hash of the full set of its permit references, and
 --     the gate recomputes that hash from the permits it is about to execute.
+--     The salt is never stored in a permit: the firm hands it to the operator
+--     off-ledger and it reaches the ledger only as an argument of the gate's
+--     choice, which no firm is an informee of. A counterparty that sees only the
+--     hash cannot test guesses about the firm's other permits.
 -- What it does not enforce. The executor itself can exercise a single permit
 -- outside the gate. That is the trust boundary: the executor must act only
 -- through governed, audited actions, and no single operator may control it.
@@ -27,14 +31,9 @@ import CompressRail.Types
 import CompressRail.Trade
 
 -- A firm's commitment to its complete bundle of permits in one package: the
--- SHA-256 of its sorted permit references and a salt. The salt keeps a
--- counterparty, which sees this value on the permit it shares, from learning
--- anything about the firm's other permits.
-data BundleCommit = BundleCommit
-  with
-    hash : Text
-    salt : Text
-  deriving (Eq, Show, Ord)
+-- SHA-256 of its sorted permit references and a secret salt. Only the hash is on
+-- the permit; the counterparty sharing the permit sees the hash, never the salt.
+type BundleHash = Text
 
 -- The canonical hash a firm computes off-ledger and the gate recomputes on-ledger.
 bundleHash : [Text] -> Text -> Text
@@ -64,8 +63,8 @@ template ExecutionPermit
     permitRef : Text
     teardown : [ContractId BilateralTrade]
     legs : [NewLeg]
-    bundleA : BundleCommit
-    bundleB : BundleCommit
+    bundleA : BundleHash
+    bundleB : BundleHash
     deadline : Time
   where
     signatory cptyA, cptyB
@@ -138,6 +137,7 @@ template BatchGate
     choice Gate_Execute : [ContractId BilateralTrade]
       with
         permits : [ContractId ExecutionPermit]
+        salts : [(Party, Text)]  -- each firm's bundle salt, supplied off-ledger
       controller operator
       do
         now <- getTime
@@ -154,9 +154,12 @@ template BatchGate
         forA_ firms $ \f -> do
           let mine = filter (\p -> p.cptyA == f || p.cptyB == f) ps
               bundles = dedup (map (\p -> if p.cptyA == f then p.bundleA else p.bundleB) mine)
+          salt <- case lookup f salts of
+            Some x -> pure x
+            None -> abort ("no bundle salt supplied for " <> show f)
           case bundles of
-            [b] -> assertMsg ("incomplete bundle for " <> show f)
-                     (bundleHash (map (.permitRef) mine) b.salt == b.hash)
+            [h] -> assertMsg ("incomplete bundle for " <> show f)
+                     (bundleHash (map (.permitRef) mine) salt == h)
             _ -> abort ("inconsistent bundle commitments for " <> show f)
         created <- forA permits (\cid -> exercise cid Permit_Execute)
         pure (concat created)

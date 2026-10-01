@@ -30,11 +30,15 @@ data Setup = Setup with
   disclosures : [Disclosure]
   deadline : Time
 
--- Each firm's complete bundle, salted.
-bundleOfA, bundleOfB, bundleOfC : BundleCommit
-bundleOfA = BundleCommit with hash = bundleHash ["rAB", "rCA"] "salt-a"; salt = "salt-a"
-bundleOfB = BundleCommit with hash = bundleHash ["rAB", "rBC"] "salt-b"; salt = "salt-b"
-bundleOfC = BundleCommit with hash = bundleHash ["rBC", "rCA"] "salt-c"; salt = "salt-c"
+-- Each firm's complete bundle, salted. The hashes go on the permits; the salts
+-- reach the gate only as its choice argument.
+bundleOfA, bundleOfB, bundleOfC : BundleHash
+bundleOfA = bundleHash ["rAB", "rCA"] "salt-a"
+bundleOfB = bundleHash ["rAB", "rBC"] "salt-b"
+bundleOfC = bundleHash ["rBC", "rCA"] "salt-c"
+
+saltsOf : Setup -> [(Party, Text)]
+saltsOf s = [(s.a, "salt-a"), (s.b, "salt-b"), (s.c, "salt-c")]
 
 -- A permit agreed by propose/accept, one acting party per submission.
 agreePermit : ExecutionPermit -> Script (ContractId ExecutionPermit)
@@ -80,11 +84,11 @@ setup = do
   pure Setup with operator; executor; a; b; c; tAB; tBC; tCA; pAB; pBC; pCA; gate; disclosures = ds; deadline
 
 runGate : Setup -> ContractId BatchGate -> [ContractId ExecutionPermit] -> Script [ContractId BilateralTrade]
-runGate s g ps = submit (actAs s.operator <> discloseMany s.disclosures) $ exerciseCmd g Gate_Execute with permits = ps
+runGate s g ps = submit (actAs s.operator <> discloseMany s.disclosures) $ exerciseCmd g Gate_Execute with permits = ps; salts = saltsOf s
 
 -- An attack must be rejected for the reason under test, not for some unrelated one.
 failGate : Setup -> ContractId BatchGate -> [ContractId ExecutionPermit] -> Text -> Script ()
-failGate s g ps why = failWith s.operator s.disclosures (exerciseCmd g Gate_Execute with permits = ps) why
+failGate s g ps why = failWith s.operator s.disclosures (exerciseCmd g Gate_Execute with permits = ps; salts = saltsOf s) why
 
 failWith : Party -> [Disclosure] -> Commands a -> Text -> Script ()
 failWith p ds cmd why = do
@@ -163,7 +167,7 @@ substitutionRejected = do
              cptyA = s.a; cptyB = s.b; executor = s.executor; gateId = "g-other"; permitRef = "rAB"
              teardown = [s.tAB]; legs = []; bundleA = bundleOfA; bundleB = bundleOfB; deadline = s.deadline
   dOther <- fromSome <$> queryDisclosure s.executor other
-  failWith s.operator (dOther :: s.disclosures) (exerciseCmd s.gate Gate_Execute with permits = [other, s.pBC, s.pCA])
+  failWith s.operator (dOther :: s.disclosures) (exerciseCmd s.gate Gate_Execute with permits = [other, s.pBC, s.pCA]; salts = saltsOf s)
     "different gate"
   assertUntouched s
 
@@ -174,13 +178,13 @@ outOfPairRejected = do
   bad <- agreePermit ExecutionPermit with
            cptyA = s.a; cptyB = s.b; executor = s.executor; gateId = "g2"; permitRef = "rX"
            teardown = [s.tAB, s.tBC]; legs = []
-           bundleA = BundleCommit with hash = bundleHash ["rX"] "sa"; salt = "sa"
-           bundleB = BundleCommit with hash = bundleHash ["rX"] "sb"; salt = "sb"
+           bundleA = bundleHash ["rX"] "salt-a"
+           bundleB = bundleHash ["rX"] "salt-b"
            deadline = s.deadline
   g2 <- submit s.executor $ createCmd BatchGate with
           executor = s.executor; operator = s.operator; gateId = "g2"; permitRefs = ["rX"]; deadline = s.deadline
   dBad <- fromSome <$> queryDisclosure s.executor bad
-  failWith s.operator (dBad :: s.disclosures) (exerciseCmd g2 Gate_Execute with permits = [bad])
+  failWith s.operator (dBad :: s.disclosures) (exerciseCmd g2 Gate_Execute with permits = [bad]; salts = saltsOf s)
     "outside its pair"
   assertUntouched s
 
@@ -193,10 +197,10 @@ inconsistentBundleRejected = do
   pCA' <- agreePermit ExecutionPermit with
             cptyA = s.c; cptyB = s.a; executor = s.executor; gateId = "g1"; permitRef = "rCA"
             teardown = [s.tCA]; legs = []; bundleA = bundleOfC
-            bundleB = BundleCommit with hash = bundleHash ["rAB", "rCA"] "other-salt"; salt = "other-salt"
+            bundleB = bundleHash ["rAB", "rCA"] "other-salt"
             deadline = s.deadline
   d' <- fromSome <$> queryDisclosure s.executor pCA'
-  failWith s.operator (d' :: s.disclosures) (exerciseCmd s.gate Gate_Execute with permits = [s.pAB, s.pBC, pCA'])
+  failWith s.operator (d' :: s.disclosures) (exerciseCmd s.gate Gate_Execute with permits = [s.pAB, s.pBC, pCA']; salts = saltsOf s)
     "inconsistent bundle"
   assertUntouched s
 
@@ -227,3 +231,28 @@ replayRejected = do
   failGate s g2 [s.pAB, s.pBC, s.pCA] ""
   cView <- query @BilateralTrade s.c
   assertMsg "C still holds nothing after the replay attempts" (null cView)
+
+-- The operator must supply every firm's salt, and the right one.
+missingSaltRejected : Script ()
+missingSaltRejected = do
+  s <- setup
+  failWith s.operator s.disclosures
+    (exerciseCmd s.gate Gate_Execute with permits = [s.pAB, s.pBC, s.pCA]; salts = [(s.a, "salt-a"), (s.b, "salt-b")])
+    "no bundle salt supplied"
+  assertUntouched s
+
+wrongSaltRejected : Script ()
+wrongSaltRejected = do
+  s <- setup
+  failWith s.operator s.disclosures
+    (exerciseCmd s.gate Gate_Execute with permits = [s.pAB, s.pBC, s.pCA]; salts = [(s.a, "guess"), (s.b, "salt-b"), (s.c, "salt-c")])
+    "incomplete bundle"
+  assertUntouched s
+
+-- No permit carries a salt: what a counterparty can read is the hash alone.
+permitCarriesNoSalt : Script ()
+permitCarriesNoSalt = do
+  s <- setup
+  Some p <- queryContractId s.b s.pAB
+  assertMsg "B sees A's bundle only as a hash" (p.bundleA == bundleOfA && p.bundleA /= "salt-a")
+
