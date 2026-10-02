@@ -56,6 +56,19 @@ Measured on 1 October 2026 (three runs):
   package. In an earlier run the host came back within the confirmation timeout and the pending request
   completed instead.
 
+`localnet/topology_attacks.py` then has node 1, one of the two owners, try to change the party's control
+on its own (measured 2 October 2026):
+
+- lowering the hosting confirmation threshold to 1, removing the other host, and lowering the namespace
+  threshold to 1 each stayed a pending proposal signed by one key; the effective topology was unchanged;
+- lowering `GovernanceRules`' threshold through a self-action with one confirmation was rejected
+  (`Enough member confirmations to execute action`);
+- a restarted Decentralization Manager node kept its participant id, public address and Noise key, still
+  listed the party, and rejoined the mesh.
+
+The pending proposals stay on the synchronizer: a second owner signing one would make it effective. Owners
+must never co-sign a topology proposal for the party that they did not expect.
+
 Limits: all three firms share one participant (node 3), so the measurement is per party, not per firm's
 own node; the sandbox runs every participant in one Canton process on one host; both members are
 operated by the same person in the rehearsal.
@@ -65,5 +78,6 @@ operated by the same person in the rehearsal.
 python3 localnet/rehearse.py <decentralization-manager-checkout> <dir-with-the-two-dars>
 CR_OFFLINE=1 python3 localnet/rehearse.py ...      # also take node 2 offline before executing
 localnet/topology.sh localhost:3902 <party-id> <synchronizer-id>
+python3 localnet/topology_attacks.py <decentralization-manager-checkout>
 ```
 
