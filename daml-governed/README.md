@@ -24,11 +24,15 @@ its party. `test/.../AlternativeAction.daml` shows what that means here: a `Part
 exercises a single permit, with the same label as the real one, executes under the stock rules once both
 members confirm, and leaves a firm partly compressed.
 
-`CompressionRules` (`daml/CompressRail/RestrictedRules.daml`) is a prototype of rules for the compression
+`CompressionRules` (`rules/daml/CompressRail/RestrictedRules.daml`) is a prototype of rules for the compression
 party that admit exactly one implementation: it compares the full template identity of the fetched action,
 package id included, with `CycleExecutionProposal`, at confirmation and again at execution. Under it the
 alternative action cannot be confirmed, while the real cycle executes, one confirmation is not enough, and
 an approved incomplete package still fails.
+
+It lives in its own package (`rules/`, `compressrail-rules`): under smart-contract upgrading a choice runs
+the code of the package version selected for the contract, so rules in the same package as the action they
+admit would be upgraded together with it.
 
 It constrains this path only: the members that control the party can still create other rules for it or
 exercise a permit directly. And the tool's built-in flows look for `GovernanceRules`, so using these rules
@@ -40,6 +44,7 @@ gives those up. It is a prototype for an upstream proposal, not part of the depl
 ./vendor.sh                       # fetches the released governance DARs at v1.12.0, SHA-256 checked
 (cd ../daml && dpm build)         # compressrail
 dpm build                         # compressrail-governed
+(cd rules && dpm build)            # compressrail-rules
 (cd test && dpm test)
 ```
 
@@ -89,6 +94,24 @@ withdrawn after approval makes execution fail (the permit is no longer active); 
 passed before execution is rejected (`gate is past its deadline`). In each case every firm still held its
 two original trades.
 
+`localnet/upgrades.py` exercises upgrades, with rehearsal-only successors built by
+`localnet/build_upgrades.sh` (measured 2 October 2026):
+
+- **Action upgrade, stock rules.** A cycle approved under `compressrail-governed` 0.0.1 was executed after
+  a successor whose `executeImpl` runs only the first permit had been uploaded to both hosts of the party.
+  With no package preference, execution ran the successor and left firm A partly compressed. Uploading a
+  DAR vets it, and the highest vetted version is selected by default.
+- **Action upgrade, restricted rules.** The same sequence under `CompressionRules` was rejected
+  (`Action implementation not admitted`), with the successor selected by default and explicitly; with
+  0.0.1 selected the full package executed.
+- **Permit upgrade.** Selecting a successor of `compressrail` whose `Permit_Execute` drops the net leg did
+  not change the permit code the cycle reached: the action calls the package checks as a function, linked
+  to the `compressrail` version it was compiled against. With an action successor linked to the permit
+  successor, both vetted on the party's hosts only, execution was refused at package selection
+  (`UNRESOLVED_PACKAGE_NAME`) and nothing changed; after the firms' node vetted the permit successor, the
+  same execution ran it. The firms' vetting decided the outcome.
+- Both hosts of the party received the same events.
+
 The pending proposals stay on the synchronizer: a second owner signing one would make it effective. Owners
 must never co-sign a topology proposal for the party that they did not expect.
 
@@ -103,5 +126,7 @@ CR_OFFLINE=1 python3 localnet/rehearse.py ...      # also take node 2 offline be
 localnet/topology.sh localhost:3902 <party-id> <synchronizer-id>
 python3 localnet/topology_attacks.py <decentralization-manager-checkout>
 python3 localnet/failures.py <decentralization-manager-checkout> <dir-with-the-two-dars>
+localnet/build_upgrades.sh /tmp/cr-upgrades       # rehearsal-only successors
+python3 localnet/upgrades.py <decentralization-manager-checkout> <dir-with-the-dars> /tmp/cr-upgrades
 ```
 

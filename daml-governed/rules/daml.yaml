@@ -1,0 +1,18 @@
+# Prototype rules for the compression party that admit exactly one action
+# implementation. Kept in its own package on purpose: under smart-contract
+# upgrading, a choice runs the code of the package version selected for the
+# contract, so rules living in the same package as the action they admit would
+# be upgraded together with it. Here the admitted identity is compiled against
+# compressrail-governed 0.0.1 and does not move when that package is upgraded.
+sdk-version: 3.5.1
+name: compressrail-rules
+version: 0.0.1
+source: daml
+dependencies:
+  - daml-prim
+  - daml-stdlib
+data-dependencies:
+  - ../.daml/dist/compressrail-governed-0.0.1.dar
+  - ../.vendor/governance-action-v1-0.1.0.dar
+build-options:
+  - -Wno-upgrade-interfaces

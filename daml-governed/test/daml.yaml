@@ -11,6 +11,7 @@ dependencies:
 data-dependencies:
   - ../../daml/.daml/dist/compressrail-0.0.3.dar
   - ../.daml/dist/compressrail-governed-0.0.1.dar
+  - ../rules/.daml/dist/compressrail-rules-0.0.1.dar
   - ../.vendor/governance-action-v1-0.1.0.dar
   - ../.vendor/governance-core-v1-0.1.0.dar
 build-options:

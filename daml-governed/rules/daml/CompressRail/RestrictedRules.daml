@@ -13,7 +13,10 @@
 -- exercise a permit directly. Defence in depth, not confinement.
 --
 -- The allowlist is compiled in: a template identity is not serializable ledger
--- data, so it cannot be a configurable contract field.
+-- data, so it cannot be a configurable contract field. It lives in its own
+-- package so that upgrading the action's package does not upgrade these rules.
+-- Upgrading this package is the same trust question as the quorum creating
+-- other rules: honest hosts must not vet a successor they did not review.
 module CompressRail.RestrictedRules where
 
 import DA.List (unique)
