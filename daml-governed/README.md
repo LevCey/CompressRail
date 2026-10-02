@@ -17,6 +17,23 @@ What this does not show: Daml Script does not model participant hosting, so who 
 measured on a real participant, not here. If every member of the governance party cooperates outside this
 action, they can still execute a subset of approved permits, each exactly as approved.
 
+## Restricting which actions the party can execute (prototype)
+
+Decentralization Manager's `GovernanceRules` executes any template that implements `GovernableAction` for
+its party. `test/.../AlternativeAction.daml` shows what that means here: a `PartialExecution` action that
+exercises a single permit, with the same label as the real one, executes under the stock rules once both
+members confirm, and leaves a firm partly compressed.
+
+`CompressionRules` (`daml/CompressRail/RestrictedRules.daml`) is a prototype of rules for the compression
+party that admit exactly one implementation: it compares the full template identity of the fetched action,
+package id included, with `CycleExecutionProposal`, at confirmation and again at execution. Under it the
+alternative action cannot be confirmed, while the real cycle executes, one confirmation is not enough, and
+an approved incomplete package still fails.
+
+It constrains this path only: the members that control the party can still create other rules for it or
+exercise a permit directly. And the tool's built-in flows look for `GovernanceRules`, so using these rules
+gives those up. It is a prototype for an upstream proposal, not part of the deployment.
+
 ## Build and test
 
 ```

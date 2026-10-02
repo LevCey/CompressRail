@@ -1,0 +1,126 @@
+-- An alternative governed action that bypasses the package gate.
+--
+-- `PartialExecution` implements `GovernableAction` for the compression party
+-- and, when executed, exercises a single permit directly — none of the package
+-- checks run. It even copies the real action's label: labels are free text.
+--
+-- Under Decentralization Manager's stock `GovernanceRules`, two cooperating
+-- members can execute it and leave the firms partly compressed. That is the
+-- quorum trust assumption, made concrete. Under `CompressionRules` it is
+-- rejected at confirmation, because its template identity is not the admitted
+-- one; the real cycle action still works there, and still fails an incomplete
+-- package.
+module CompressRail.Test.AlternativeAction where
+
+import Daml.Script
+import DA.Set qualified as Set
+import DA.Text (isInfixOf)
+import DA.Time (minutes)
+import DA.Foldable (forA_)
+
+import Governance.Action
+import Governance.Rules
+import CompressRail.Trade
+import CompressRail.Gate
+import CompressRail.RestrictedRules
+import CompressRail.Test.Governed
+
+template PartialExecution
+  with
+    governanceParty : Party
+    proposer : Party
+    permit : ContractId ExecutionPermit
+  where
+    signatory proposer
+    observer governanceParty
+
+    interface instance GovernableAction for PartialExecution where
+      view = GovernableActionView with
+        governanceParty
+        proposer
+        actionLabel = "ExecuteCompressionCycle"
+        description = "compression cycle g1"
+      executeImpl = do
+        _ <- exercise permit Permit_Execute
+        pure ()
+
+proposePartial : Setup -> Script (ContractId GovernableAction)
+proposePartial s = do
+  cid <- submit s.m1 $ createCmd PartialExecution with governanceParty = s.e; proposer = s.m1; permit = s.pAB
+  pure (toInterfaceContractId @GovernableAction cid)
+
+heldRefs : Party -> Script [Text]
+heldRefs p = map (\(_, t) -> t.tradeRef) <$> query @BilateralTrade p
+
+-- Stock rules: both members confirm the alternative action, and only A–B is compressed.
+baselineBypassUnderStockRules : Script ()
+baselineBypassUnderStockRules = do
+  s <- setup
+  prop <- proposePartial s
+  c1 <- confirm s s.m1 prop
+  c2 <- confirm s s.m2 prop
+  execute s s.m2 prop [c1, c2]
+  aRefs <- heldRefs s.a
+  bRefs <- heldRefs s.b
+  cRefs <- heldRefs s.c
+  assertMsg "A–B was torn up and replaced, alone" ("n1" `elem` aRefs && "t1" `notElem` aRefs)
+  assertMsg "C–A was not executed: A is left partly compressed" ("t3" `elem` aRefs)
+  assertMsg "B–C was not executed" ("t2" `elem` bRefs && length cRefs == 2)
+
+-- Restricted rules for the same party: two members, threshold 2.
+restrictedRules : Setup -> Script (ContractId CompressionRules)
+restrictedRules s = submit s.e $ createCmd CompressionRules with
+  governanceParty = s.e
+  members = Set.fromList [s.m1, s.m2]
+  threshold = 2
+  confirmationTimeout = minutes 30
+
+restrictedConfirm : Setup -> ContractId CompressionRules -> Party -> ContractId GovernableAction -> Script (ContractId CompressionConfirmation)
+restrictedConfirm s rules m prop =
+  submit (asMember s m) $ exerciseCmd rules CompressionRules_Confirm with confirmer = m; actionProposalCid = prop
+
+restrictedExecute : Setup -> ContractId CompressionRules -> ContractId GovernableAction -> [ContractId CompressionConfirmation] -> Commands ()
+restrictedExecute s rules prop cs =
+  exerciseCmd rules CompressionRules_Execute with executor = s.m2; actionProposalCid = prop; confirmations = cs
+
+-- The alternative action cannot even be confirmed.
+alternativeActionRejectedByRestrictedRules : Script ()
+alternativeActionRejectedByRestrictedRules = do
+  s <- setup
+  rules <- restrictedRules s
+  prop <- proposePartial s
+  forA_ [s.m1, s.m2] $ \m ->
+    mustFail (asMember s m)
+      (exerciseCmd rules CompressionRules_Confirm with confirmer = m; actionProposalCid = prop)
+      "Action implementation not admitted"
+  assertUntouched s
+
+-- The admitted action executes the whole package under the restricted rules.
+restrictedRulesExecuteTheCycle : Script ()
+restrictedRulesExecuteTheCycle = do
+  s <- setup
+  rules <- restrictedRules s
+  prop <- fullPackage s
+  c1 <- restrictedConfirm s rules s.m1 prop
+  c2 <- restrictedConfirm s rules s.m2 prop
+  submit (asMember s s.m2 <> discloseMany s.trades) (restrictedExecute s rules prop [c1, c2])
+  aRefs <- heldRefs s.a
+  cRefs <- heldRefs s.c
+  assertMsg "A holds only the net leg" (aRefs == ["n1"])
+  assertMsg "C nets out entirely" (null cRefs)
+
+-- One confirmation is still not enough, and an approved incomplete package still fails.
+restrictedRulesKeepTheOtherChecks : Script ()
+restrictedRulesKeepTheOtherChecks = do
+  s <- setup
+  rules <- restrictedRules s
+  prop <- fullPackage s
+  c1 <- restrictedConfirm s rules s.m1 prop
+  mustFail (asMember s s.m2 <> discloseMany s.trades) (restrictedExecute s rules prop [c1])
+    "Enough confirmations to execute action"
+  partial <- propose s ["rAB", "rBC"] [s.pAB, s.pBC]
+  d1 <- restrictedConfirm s rules s.m1 partial
+  d2 <- restrictedConfirm s rules s.m2 partial
+  mustFail (asMember s s.m2 <> discloseMany s.trades) (restrictedExecute s rules partial [d1, d2])
+    "incomplete bundle"
+  assertUntouched s

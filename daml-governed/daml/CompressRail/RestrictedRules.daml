@@ -1,0 +1,88 @@
+-- Prototype: a version-aware action admission policy for the compression party.
+--
+-- Decentralization Manager's `GovernanceRules` executes any template that
+-- implements `GovernableAction` for its governance party, once enough members
+-- confirm. These rules do the same, but admit exactly one implementation: the
+-- `CycleExecutionProposal` template of this package. The check compares the
+-- full template identity of the fetched action, package id included, so an
+-- upgraded implementation of the same name is not admitted either. It runs at
+-- confirmation and again at execution.
+--
+-- What it does not do: it constrains this path only. The quorum that controls
+-- the governance party can still create other rules contracts for it or
+-- exercise a permit directly. Defence in depth, not confinement.
+--
+-- The allowlist is compiled in: a template identity is not serializable ledger
+-- data, so it cannot be a configurable contract field.
+module CompressRail.RestrictedRules where
+
+import DA.List (unique)
+import DA.Set (Set)
+import DA.Set qualified as Set
+import DA.Time (RelTime, addRelTime)
+import Governance.Action
+import CompressRail.Governed
+
+-- The only action these rules admit.
+admitted : GovernableAction -> Bool
+admitted action = interfaceTypeRep action == templateTypeRep @CycleExecutionProposal
+
+template CompressionConfirmation
+  with
+    governanceParty : Party
+    confirmer : Party
+    actionProposalCid : ContractId GovernableAction
+    expiresAt : Time
+  where
+    signatory confirmer, governanceParty
+
+    choice CompressionConfirmation_Consume : CompressionConfirmation
+      controller governanceParty
+      do pure this
+
+template CompressionRules
+  with
+    governanceParty : Party
+    members : Set Party
+    threshold : Int
+    confirmationTimeout : RelTime
+  where
+    signatory governanceParty
+    ensure not (Set.null members) && threshold >= 1 && threshold <= Set.size members
+
+    nonconsuming choice CompressionRules_Confirm : ContractId CompressionConfirmation
+      with
+        confirmer : Party
+        actionProposalCid : ContractId GovernableAction
+      controller confirmer
+      do
+        assertMsg "Confirmer is a governance member" (confirmer `Set.member` members)
+        action <- fetch actionProposalCid
+        assertMsg "Action implementation not admitted" (admitted action)
+        let v = view action
+        assertMsg "Proposal targets this governance" (v.governanceParty == governanceParty)
+        assertMsg "Proposer is a governance member" (v.proposer `Set.member` members)
+        now <- getTime
+        create CompressionConfirmation with
+          governanceParty; confirmer; actionProposalCid
+          expiresAt = addRelTime now confirmationTimeout
+
+    nonconsuming choice CompressionRules_Execute : ()
+      with
+        executor : Party
+        actionProposalCid : ContractId GovernableAction
+        confirmations : [ContractId CompressionConfirmation]
+      controller executor
+      do
+        assertMsg "Executor is a governance member" (executor `Set.member` members)
+        now <- getTime
+        cs <- forA confirmations (\c -> exercise c CompressionConfirmation_Consume)
+        let valid = filter (\c -> c.expiresAt > now) cs
+        assertMsg "All confirmations must reference this proposal"
+          (all (\c -> c.actionProposalCid == actionProposalCid) valid)
+        assertMsg "All confirmers must be members" (all (\c -> c.confirmer `Set.member` members) valid)
+        assertMsg "No duplicate confirmers" (unique (map (.confirmer) valid))
+        assertMsg "Enough confirmations to execute action" (length valid >= threshold)
+        action <- fetch actionProposalCid
+        assertMsg "Action implementation not admitted" (admitted action)
+        exercise actionProposalCid GovernableAction_Execute
