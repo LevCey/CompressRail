@@ -66,6 +66,12 @@ on its own (measured 2 October 2026):
 - a restarted Decentralization Manager node kept its participant id, public address and Noise key, still
   listed the party, and rejoined the mesh.
 
+`localnet/failures.py` checks that both members' approval does not override the package checks (measured
+2 October 2026): an approved package that leaves out a pair is rejected (`incomplete bundle`); a permit
+withdrawn after approval makes execution fail (the permit is no longer active); a package whose deadline
+passed before execution is rejected (`gate is past its deadline`). In each case every firm still held its
+two original trades.
+
 The pending proposals stay on the synchronizer: a second owner signing one would make it effective. Owners
 must never co-sign a topology proposal for the party that they did not expect.
 
@@ -79,5 +85,6 @@ python3 localnet/rehearse.py <decentralization-manager-checkout> <dir-with-the-t
 CR_OFFLINE=1 python3 localnet/rehearse.py ...      # also take node 2 offline before executing
 localnet/topology.sh localhost:3902 <party-id> <synchronizer-id>
 python3 localnet/topology_attacks.py <decentralization-manager-checkout>
+python3 localnet/failures.py <decentralization-manager-checkout> <dir-with-the-two-dars>
 ```
 
