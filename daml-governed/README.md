@@ -59,8 +59,10 @@ Decentralization Manager's sandbox at a pinned commit with the versions DevNet r
 0.8.4), runs the governed cycle with its negative tests and visibility read-back (`rehearse.py`), then the
 execution-failure cases (`failures.py`), and prints how many checks passed.
 
-Needs Linux x86-64 or macOS, Docker with Compose v2.1.1+ and at least 12 GB of memory and 4 CPUs for Docker,
-about 20 GB of free disk, and a network connection (the first start pulls the sandbox images). On Ubuntu:
+Needs Linux or macOS, Docker with Compose v2.1.1+ and at least 12 GB of memory and 4 CPUs for Docker, about
+20 GB of free disk, and a network connection (the first start pulls several GB of images). The Decentralization
+Manager image is amd64-only: on an ARM Linux host also install amd64 emulation (on Ubuntu,
+`sudo apt-get install -y qemu-user-static binfmt-support`); Docker Desktop on Apple silicon provides it. On Ubuntu:
 
 ```
 sudo apt-get update

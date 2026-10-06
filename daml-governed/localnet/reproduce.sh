@@ -32,6 +32,7 @@ PIN_GOV="d7ea09960153f96d4f7667cb1530bf55889256f3f9e7c3d1e4186bdb04ed7ddc"   # c
 
 step() { printf '\n==> %s\n' "$*"; }
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+quiet() { local out; out=$("$@" 2>&1) || { printf '%s\n' "$out" | tail -40; die "failed: $*"; }; }
 
 step "Prerequisites"
 missing=""
@@ -43,15 +44,22 @@ java_major=$(java -version 2>&1 | sed -nE 's/.*version "([0-9]+).*/\1/p' | head 
 [ "${java_major:-0}" -ge 17 ] || die "JDK 17 or newer is required (found ${java_major:-none})"
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' || die "python 3.10 or newer is required"
 echo "    docker compose $(docker compose version --short), java $java_major, $(python3 --version), dpm $(dpm --version 2>/dev/null | head -1)"
+arch=$(uname -m)
+if [ "$(uname -s)" = Linux ] && [ "$arch" != x86_64 ]; then
+    # The Decentralization Manager image is published for linux/amd64 only.
+    [ -e /proc/sys/fs/binfmt_misc/qemu-x86_64 ] || die "the Decentralization Manager image is amd64-only; on $arch \
+install amd64 emulation first (Ubuntu: sudo apt-get install -y qemu-user-static binfmt-support)"
+    echo "    $arch host: amd64 emulation is registered (the manager image is amd64-only)"
+fi
 mkdir -p "$WORK/dars"
 
 step "Build and test the Daml packages"
 sdk=$(sed -nE 's/^sdk-version: *//p' "$ROOT/daml/daml.yaml")
 dpm install "$sdk" >/dev/null 2>&1 || dpm install "$sdk"
 echo "    SDK $sdk installed"
-(cd "$ROOT/daml" && dpm build >/dev/null && echo "    compressrail built")
-(cd "$GOV" && ./vendor.sh && dpm build >/dev/null && echo "    compressrail-governed built")
-(cd "$GOV/rules" && dpm build >/dev/null && echo "    compressrail-rules built (prototype, used by the tests)")
+(cd "$ROOT/daml" && quiet dpm build && echo "    compressrail built")
+(cd "$GOV" && ./vendor.sh && quiet dpm build && echo "    compressrail-governed built")
+(cd "$GOV/rules" && quiet dpm build && echo "    compressrail-rules built (prototype, used by the tests)")
 python3 - "$ROOT/daml/.daml/dist/compressrail-0.0.3.dar" compressrail-0.0.3 "$PIN_CR" \
           "$GOV/.daml/dist/compressrail-governed-0.0.1.dar" compressrail-governed-0.0.1 "$PIN_GOV" <<'PY'
 import re, sys, zipfile
