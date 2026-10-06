@@ -15,7 +15,8 @@ the cycle, ever seeing another participant's positions.
 > drive (see [Verify the live deployment](#verify-the-live-deployment)). A local Canton sandbox is used
 > only for development and tests. A multilateral compression cycle has also run across three
 > participant nodes, with the operator on a node of its own
-> ([details and limits](#across-participant-nodes)). See
+> ([details and limits](#across-participant-nodes)), and through a Decentralized Party that CompressRail
+> and BitSafe control together ([governed execution on DevNet](#governed-execution-on-devnet-with-bitsafe)). See
 > [Roadmap](#roadmap) for what is not yet built. Not audited. Not for production use.
 
 ## Verify the live deployment
@@ -61,6 +62,22 @@ handoff of the sealed leg is simulated. The hosted demo itself still runs on a s
 ```
 cd app && npm run e2e:threenode   # needs all three nodes configured; see scenario/threenode.e2e.test.ts
 ```
+
+### Governed execution on DevNet, with BitSafe
+
+On 6 October 2026 a cycle executed through `compressrail-exec`, a Decentralized Party hosted on our operator
+node and on BitSafe's validator, with every threshold 2 of 2. The pair permits name that party as their only
+executor, and the cycle runs as a governed action under Decentralization Manager's `GovernanceRules`, with one
+member from each organisation and a threshold of 2. With only our confirmation, execution was rejected; after
+BitSafe's member confirmed from BitSafe's node, the complete package executed in one transaction. Each firm's
+ledger-effects stream held only its own pairs and no governance contracts; the execution party, and so each of
+its hosts, received the whole package.
+
+What it does not show: with 2-of-2 hosting, execution stops if either host is down; the stock rules accept any
+action the members approve, which we restrict by policy only; our side confirms through the rules' choices
+directly because our ledger API runs without authentication; the firms share nodes and one test process, and
+trade terms are placeholders. Details, measurements and scripts:
+[`daml-governed/README.md`](daml-governed/README.md#devnet-run-devnet).
 
 ## The problem
 

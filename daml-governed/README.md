@@ -51,6 +51,98 @@ dpm build                         # compressrail-governed
 These are the same DAR files a Decentralization Manager v1.12.0 node distributes, so the package ids
 match a real deployment.
 
+## DevNet run (`devnet/`)
+
+On 6 October 2026 a compression cycle executed on Canton DevNet through a Decentralized Party that
+CompressRail and BitSafe control together. Identifiers and measurements: `devnet/results-2026-10-06.json`.
+
+Setup:
+
+- The execution party `compressrail-exec` was created with Decentralization Manager (v1.12.0 on our node,
+  v1.13.0 on BitSafe's). It has two owners, one per organisation, and is hosted with confirmation permission
+  on our operator participant (`compressrail-operator-1`) and on BitSafe's `iBTC-validator-1`. Read back from
+  our host before and after the run: hosting confirmation threshold 2, party signing keys 2 of 2,
+  decentralized namespace 2 of 2, no pending proposals. BitSafe's owner key was compared out of band with the
+  topology.
+- `GovernanceRules` (governance-core-v1, `361d1f28…`), deployed through the tool and accepted by BitSafe:
+  members `compressrail-member` (on our operator participant) and `attestor-1` (hosted only on BitSafe's
+  node), threshold 2, confirmation timeout 24 hours.
+- The tool distributed `compressrail` 0.0.3 and `compressrail-governed` 0.0.1 to BitSafe's node; both, and
+  governance-core-v1, are vetted there.
+- Firms A and C are on our DevNet validator, firm B on the NODERS-hosted HackCanton participant. Three trades
+  form the A–B, C–B, C–A ring; trades and pair permits are agreed by propose/accept, and every permit names
+  the execution party as its only executor.
+
+Run (`devnet/cycle.py` on our operator host; `devnet/firm_b.py` with firm B's own credentials):
+
+1. `compressrail-member` proposed the `CycleExecutionProposal` for the three permits.
+2. `compressrail-member` confirmed. Then each of these was rejected and nothing changed: execution with that
+   one confirmation (`DAML_FAILURE`, `Enough confirmations to execute action`); our member exercising a permit
+   directly (`DAML_AUTHORIZATION_ERROR`); our node submitting as the execution party
+   (`NO_SYNCHRONIZER_ON_WHICH_ALL_SUBMITTERS_CAN_SUBMIT`).
+3. `attestor-1` confirmed, from BitSafe's node.
+4. `compressrail-member` executed with both confirmations, in one transaction (update `1220b29b83daaaea…`,
+   17:00 UTC). The `GovernanceExecutionResult` lists both confirmers. Of this run's trades, firms A and B then
+   held only the net A–B leg and firm C none; the three permits were consumed and the proposal was archived.
+
+What each party received, from its ledger-effects stream since the start of the run, read with that party's
+own rights:
+
+| Party | Pairs | Governance contracts |
+|---|---|---|
+| firm A (our validator) | A–B, C–A | none |
+| firm C (our validator) | C–A, C–B | none |
+| firm B (HackCanton participant) | A–B, C–B | none |
+| `compressrail-exec`, read on our host | all three | proposal, confirmations, rules, execution result |
+
+Each host of the execution party receives that view; we read it on our host only. The HackCanton participant
+had only `compressrail` vetted, and the execution did not need the governance packages there.
+
+Where this differs from the tool's standard flow:
+
+- On our node the manager's `/governance/confirm` failed with `INVALID_TOKEN … missing a user-id`: in test mode
+  the manager sends no user id, and our operator participant runs with Ledger API authentication disabled,
+  so the participant cannot take one from a token. Our confirmation and execution therefore exercise
+  `GovernanceRules_ConfirmAction` and `GovernanceRules_ExecuteConfirmedAction` directly, as our member with an
+  explicit user id. The checks are the same: they are in `GovernanceRules`.
+- In test mode the manager's Approvals page lists governance actions only for authenticated parties, so on our
+  node the proposal and confirmations show in the party's audit trail instead.
+
+Limits:
+
+- Hosting is 2 of 2: if either host is unavailable, execution stops (measured on LocalNet, below). We make
+  no availability claim.
+- Stock `GovernanceRules` execute any `GovernableAction` the members approve. We restrict that by policy:
+  members confirm only `CycleExecutionProposal` from `compressrail-governed` `d7ea0996…`, no `BatchGate` is
+  created for the execution party, and no package successor is uploaded while permits, proposals or
+  confirmations are outstanding. `CompressionRules` (above) is not deployed.
+- Our manager runs in insecure mode, which the tool permits on DevNet only, and our operator participant's
+  Ledger API has authentication disabled; both are reachable only on our host.
+- Firms A and C share our validator, firm B a colocated HackCanton participant, and our two validators run on
+  one host, so this is not each firm on its own infrastructure. The firms' bundle salts are generated in one
+  test process. Trade terms are opaque placeholders, and the ring is set up by the script: this run does not
+  exercise the matcher.
+
+To run it against another Decentralized Party (configuration: the `CR_*` variables in each script's header;
+the defaults are the deployment above):
+
+```
+# on the host of the participant that hosts the execution party and your member
+python3 devnet/cycle.py setup             # firms A and C, trade C–A, trade proposals to firm B
+python3 devnet/firm_b.py accept-trades    # on firm B's participant, with firm B's CR_FIRM_* settings
+python3 devnet/cycle.py permits
+python3 devnet/firm_b.py accept-permits
+python3 devnet/cycle.py propose           # runs the read-only `check` first
+python3 devnet/cycle.py confirm           # your member's confirmation, then the three rejections
+python3 devnet/cycle.py status            # after the other member confirms on its node
+python3 devnet/cycle.py execute
+python3 devnet/cycle.py evidence && python3 devnet/firm_b.py evidence
+```
+
+Prerequisites: `GovernanceRules` deployed for the party with both members; the three DARs vetted on every host
+of the party, and `compressrail` on the firms' participants; your ledger API user with act-as and read-as on
+the party and on your member.
+
 ## LocalNet rehearsal (`localnet/`)
 
 `localnet/rehearse.py` runs the governed cycle end to end on Decentralization Manager's three-node LocalNet

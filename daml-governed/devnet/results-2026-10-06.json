@@ -1,0 +1,318 @@
+{
+  "run": "8d67bf",
+  "network": "Canton DevNet (global synchronizer)",
+  "date": "2026-10-06",
+  "execution_party": "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b",
+  "hosts": {
+    "compressrail-operator-1::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2": "CompressRail",
+    "iBTC-validator-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e": "BitSafe"
+  },
+  "governance_members": {
+    "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2": "CompressRail (operator node)",
+    "attestor-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e": "BitSafe (iBTC-validator-1 only)"
+  },
+  "packages": {
+    "compressrail 0.0.3": "a6f77b297c7fda8dfadc10a7211a6755f82451c70d5fc6854cef1a7094b6f619",
+    "compressrail-governed 0.0.1": "d7ea09960153f96d4f7667cb1530bf55889256f3f9e7c3d1e4186bdb04ed7ddc",
+    "governance-core-v1 0.1.0": "361d1f2857f833f8094caf86ecdd5daaa3e2075c22dafe2bf18cde63ee98d488"
+  },
+  "firms": {
+    "A": "cr-dn-a-8d67bf::12204bf90738169e8355b62c3c58f0d8c4d09552578af235a7abfbc469ccc268a4e9 (our validator)",
+    "C": "cr-dn-c-8d67bf::12204bf90738169e8355b62c3c58f0d8c4d09552578af235a7abfbc469ccc268a4e9 (our validator)",
+    "B": "04a88dea-f608-4bd2-9eb4-2703c1398a98::12204a9d883d1158141d8f099d06dd2e42cb52615deb42da5a46f042c8d0e1dbdf0e (NODERS HackCanton participant)"
+  },
+  "rules_contract": "002c3e7e1a11839187e62ee5d89821fc59ccc4b3874d9e55246fd6dbffde8a1f61ca1212204c51e27b6cfcfa672bc1dc59a4cca5142b11eb85a7fa6e6395fbd8914720ca6d",
+  "rules_after": {
+    "governanceParty": "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b",
+    "members": {
+      "map": [
+        [
+          "attestor-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e",
+          {}
+        ],
+        [
+          "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2",
+          {}
+        ]
+      ]
+    },
+    "threshold": "2",
+    "actionConfirmationTimeout": {
+      "microseconds": "86400000000"
+    }
+  },
+  "gate_id": "devnet-8d67bf",
+  "trade_contracts": {
+    "AB": "00642984207643c7bb0424a29690447ea860d8bb8a98fa6e9e065bba7b35ab4fadca121220e098412bc50acdcf0c8b0fe14d88da26428b23b28cc4a281c38f5fb49f50ccb7",
+    "CB": "0055753434430877a7d3cefa8553fea80632f53f527987d9d8dc8c549721d7c43aca12122069c25369692de8c739727d16f585fc0e06464fa96d34e953c8fdec711e8749ed",
+    "CA": "00ccc97dafeabb3b32c8ca9213b11869e0e10ddec5d5176ce6c9970919ab1b00b7ca121220aafba2477e3178aedd7583f9b40a84cd31bfc8b683157b50a178be66a1d126a6"
+  },
+  "permit_contracts": {
+    "AB": "00bf0d763e34c047888c5f29901672f5e4612915bfca012a4c88215423358b8aeeca121220418b0cb97f3165ea73d6ece2c70d4bf7ad1baac0453218dc6d16f21a76da2bd8",
+    "CB": "00cef8750fe1b2bf328dd82f7fe19f44ab615b9a59854bf36e094043c281fc292fca12122088eb1d9e34cc132c7fe6f25384d8706cc5e7339de7438542e6419e8cb8e83b20",
+    "CA": "001adee639d0b87bd13b5bdca13d05d3fbda1a1cc937ae4ac440acf6d626a18b38ca1212203f2b2bf6cf38af3c7607d0328c4103acb33f3a249edb25aac7acb4384ad30d7f"
+  },
+  "proposal": {
+    "contract_id": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+    "deadline": "2026-10-07T11:02:41.465525Z"
+  },
+  "rejected_before_threshold": {
+    "execute with one confirmation": {
+      "http": 400,
+      "error_code": "DAML_FAILURE",
+      "expected_reason_found": true
+    },
+    "our member exercises a permit directly": {
+      "http": 400,
+      "error_code": "DAML_AUTHORIZATION_ERROR",
+      "expected_reason_found": true
+    },
+    "our node submits as compressrail-exec alone": {
+      "http": 404,
+      "error_code": "NO_SYNCHRONIZER_ON_WHICH_ALL_SUBMITTERS_CAN_SUBMIT",
+      "expected_reason_found": true
+    }
+  },
+  "nothing_changed_after_rejections": true,
+  "execution": {
+    "update_id": "1220b29b83daaaea891d9afd239f2995c0f9e48f4e694a8e1d65c81dd4d7071343d4",
+    "completion_offset_operator_node": 1213315,
+    "net_leg_contract": "005f0522b3de5faf73897c9e5cdf605170c649bc202ef7e19fff45702115e717ebca121220afb56917c3e559b9dfa6d7d1fba99b564f079747e1a2a0c62fb548d4da3f7ad4"
+  },
+  "ledger_effects_by_party": {
+    "A": {
+      "events": 13,
+      "pairs": [
+        "AB",
+        "CA"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "templates": [
+        "BilateralTrade",
+        "ExecutionPermit",
+        "PermitProposal",
+        "TradeProposal"
+      ]
+    },
+    "C": {
+      "events": 12,
+      "pairs": [
+        "CA",
+        "CB"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "templates": [
+        "BilateralTrade",
+        "ExecutionPermit",
+        "PermitProposal",
+        "TradeProposal"
+      ]
+    },
+    "compressrail-exec (operator node)": {
+      "events": 20,
+      "pairs": [
+        "AB",
+        "CA",
+        "CB"
+      ],
+      "foreign_pairs": [],
+      "governance": [
+        "CycleExecutionProposal",
+        "GovernanceConfirmation",
+        "GovernanceExecutionResult",
+        "GovernanceRules"
+      ],
+      "templates": [
+        "BilateralTrade",
+        "CycleExecutionProposal",
+        "ExecutionPermit",
+        "GovernanceConfirmation",
+        "GovernanceExecutionResult",
+        "GovernanceRules"
+      ]
+    },
+    "B (HackCanton, read with firm B's own credentials)": {
+      "events": 15,
+      "pairs": [
+        "AB",
+        "CB"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "holds_after": [
+        "net leg"
+      ]
+    }
+  },
+  "topology_before_execute": "PartyToParticipant  confirmation threshold: 2\n  host: compressrail-operator-1::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2 PARTICIPANT_PERMISSION_CONFIRMATION\n  host: iBTC-validator-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e PARTICIPANT_PERMISSION_CONFIRMATION\nParty signing keys  count: 2  threshold: 2\nDecentralized namespace  owners: 2  threshold: 2\nPending proposals (each needs the other owner's signature to take effect):\n  PartyToParticipant: none\n  Decentralized namespace: none\n",
+  "topology_after": "PartyToParticipant  confirmation threshold: 2\n  host: compressrail-operator-1::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2 PARTICIPANT_PERMISSION_CONFIRMATION\n  host: iBTC-validator-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e PARTICIPANT_PERMISSION_CONFIRMATION\nParty signing keys  count: 2  threshold: 2\nDecentralized namespace  owners: 2  threshold: 2\nPending proposals (each needs the other owner's signature to take effect):\n  PartyToParticipant: none\n  Decentralized namespace: none\n",
+  "manager_audit_trail": [
+    {
+      "offset": 1213315,
+      "timestamp": 1791306019,
+      "event_type": "execute",
+      "action_summary": "GovernanceRules_ExecuteConfirmedAction",
+      "template_id": "Governance.Rules:GovernanceRules",
+      "package_id": "361d1f2857f833f8094caf86ecdd5daaa3e2075c22dafe2bf18cde63ee98d488",
+      "contract_id": "002c3e7e1a11839187e62ee5d89821fc59ccc4b3874d9e55246fd6dbffde8a1f61ca1212204c51e27b6cfcfa672bc1dc59a4cca5142b11eb85a7fa6e6395fbd8914720ca6d",
+      "acting_parties": [
+        "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
+      ],
+      "update_id": "1220b29b83daaaea891d9afd239f2995c0f9e48f4e694a8e1d65c81dd4d7071343d4",
+      "details": {
+        "actionProposalCid": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+        "confirmations": [
+          "00798adf0c0463038f837549ef5f84f4c6db4dc00e788f3354966646da765b8b29ca1212200cfb8193c5cdafff0b6df25b7c230e3b9b1b380f2298ce7fa8196bffc7f97c39",
+          "0050133365f5658c54c5dab8a726db35c038dcbd95649e71db3176157350211d8aca1212206fcda1e07afd6c5386be1d4bb900bff9de7217be1f54307b6947eeb267e57296"
+        ],
+        "executor": "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
+      }
+    },
+    {
+      "offset": 1213315,
+      "timestamp": 1791306019,
+      "event_type": "execute",
+      "action_summary": "GovernableAction_Execute",
+      "template_id": "CompressRail.Governed:CycleExecutionProposal",
+      "package_id": "d7ea09960153f96d4f7667cb1530bf55889256f3f9e7c3d1e4186bdb04ed7ddc",
+      "contract_id": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+      "acting_parties": [
+        "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b"
+      ],
+      "update_id": "1220b29b83daaaea891d9afd239f2995c0f9e48f4e694a8e1d65c81dd4d7071343d4",
+      "details": {}
+    },
+    {
+      "offset": 1213315,
+      "timestamp": 1791306019,
+      "event_type": "execute_result",
+      "action_summary": "GovernanceExecutionResult",
+      "template_id": "Governance.ExecutionResult:GovernanceExecutionResult",
+      "package_id": "361d1f2857f833f8094caf86ecdd5daaa3e2075c22dafe2bf18cde63ee98d488",
+      "contract_id": "0041030655dc5c94d1cd832b357d1835129fd261bd27732c979eaa4b3d777633e8ca121220effc01d9f116d6756dada9b1fb94ed580c89f488af8f3ca28c279a20e514b7a0",
+      "acting_parties": [
+        "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b"
+      ],
+      "update_id": "1220b29b83daaaea891d9afd239f2995c0f9e48f4e694a8e1d65c81dd4d7071343d4",
+      "details": {
+        "actionLabel": "ExecuteCompressionCycle",
+        "confirmers": [
+          "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2",
+          "attestor-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e"
+        ],
+        "description": "CompressRail compression cycle devnet-8d67bf: three permits, one net leg",
+        "executedAt": 1791306019532053,
+        "executor": "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2",
+        "governanceParty": "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b"
+      }
+    },
+    {
+      "offset": 1204622,
+      "timestamp": 1791295033,
+      "event_type": "confirm",
+      "action_summary": "GovernanceRules_ConfirmAction",
+      "template_id": "Governance.Rules:GovernanceRules",
+      "package_id": "361d1f2857f833f8094caf86ecdd5daaa3e2075c22dafe2bf18cde63ee98d488",
+      "contract_id": "002c3e7e1a11839187e62ee5d89821fc59ccc4b3874d9e55246fd6dbffde8a1f61ca1212204c51e27b6cfcfa672bc1dc59a4cca5142b11eb85a7fa6e6395fbd8914720ca6d",
+      "acting_parties": [
+        "attestor-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e"
+      ],
+      "update_id": "122010f1fab4f4ac30cc89d0b6fdd6b02edef4d08ad303d761d1df1acee4d8a0f402",
+      "details": {
+        "actionProposalCid": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+        "confirmer": "attestor-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e"
+      }
+    },
+    {
+      "offset": 1204622,
+      "timestamp": 1791295033,
+      "event_type": "confirm",
+      "action_summary": "GovernanceConfirmation",
+      "template_id": "Governance.Confirmation:GovernanceConfirmation",
+      "package_id": "361d1f2857f833f8094caf86ecdd5daaa3e2075c22dafe2bf18cde63ee98d488",
+      "contract_id": "0050133365f5658c54c5dab8a726db35c038dcbd95649e71db3176157350211d8aca1212206fcda1e07afd6c5386be1d4bb900bff9de7217be1f54307b6947eeb267e57296",
+      "acting_parties": [
+        "attestor-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e",
+        "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b"
+      ],
+      "update_id": "122010f1fab4f4ac30cc89d0b6fdd6b02edef4d08ad303d761d1df1acee4d8a0f402",
+      "details": {
+        "actionLabel": "ExecuteCompressionCycle",
+        "actionProposalCid": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+        "confirmer": "attestor-1::1220fa8543db6c66fe3a55b1f180c8dfc7f876265c76684fbc1d35d89e02c8aafe8e",
+        "expiresAt": 1791381433585501,
+        "governanceParty": "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b"
+      }
+    },
+    {
+      "offset": 1201671,
+      "timestamp": 1791291326,
+      "event_type": "confirm",
+      "action_summary": "GovernanceRules_ConfirmAction",
+      "template_id": "Governance.Rules:GovernanceRules",
+      "package_id": "361d1f2857f833f8094caf86ecdd5daaa3e2075c22dafe2bf18cde63ee98d488",
+      "contract_id": "002c3e7e1a11839187e62ee5d89821fc59ccc4b3874d9e55246fd6dbffde8a1f61ca1212204c51e27b6cfcfa672bc1dc59a4cca5142b11eb85a7fa6e6395fbd8914720ca6d",
+      "acting_parties": [
+        "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
+      ],
+      "update_id": "1220696ecc325e2051597acd78ea798dd88a73dad34aa9ff84ec24b5f8eeaa872514",
+      "details": {
+        "actionProposalCid": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+        "confirmer": "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
+      }
+    },
+    {
+      "offset": 1201671,
+      "timestamp": 1791291326,
+      "event_type": "confirm",
+      "action_summary": "GovernanceConfirmation",
+      "template_id": "Governance.Confirmation:GovernanceConfirmation",
+      "package_id": "361d1f2857f833f8094caf86ecdd5daaa3e2075c22dafe2bf18cde63ee98d488",
+      "contract_id": "00798adf0c0463038f837549ef5f84f4c6db4dc00e788f3354966646da765b8b29ca1212200cfb8193c5cdafff0b6df25b7c230e3b9b1b380f2298ce7fa8196bffc7f97c39",
+      "acting_parties": [
+        "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b",
+        "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
+      ],
+      "update_id": "1220696ecc325e2051597acd78ea798dd88a73dad34aa9ff84ec24b5f8eeaa872514",
+      "details": {
+        "actionLabel": "ExecuteCompressionCycle",
+        "actionProposalCid": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+        "confirmer": "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2",
+        "expiresAt": 1791377726718139,
+        "governanceParty": "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b"
+      }
+    },
+    {
+      "offset": 1196328,
+      "timestamp": 1791284561,
+      "event_type": "propose",
+      "action_summary": "CycleExecutionProposal",
+      "template_id": "CompressRail.Governed:CycleExecutionProposal",
+      "package_id": "d7ea09960153f96d4f7667cb1530bf55889256f3f9e7c3d1e4186bdb04ed7ddc",
+      "contract_id": "007926a30c4a9a6e4dd8c3dcc7795d140ff6684d10fa9a129afb87bbf836a83173ca121220a1cbfdaece6f9deadc03726f4e064be6664bee12f554252bad5cf6912ae92f4c",
+      "acting_parties": [
+        "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
+      ],
+      "update_id": "122020f3f4e365f990800d5df66da2a1e70c00458a6e6237edf2f844d2ecb53b6ca5",
+      "details": {
+        "deadline": 1791370961465525,
+        "description": "CompressRail compression cycle devnet-8d67bf: three permits, one net leg",
+        "gateId": "devnet-8d67bf",
+        "governanceParty": "compressrail-exec::1220c513df48a6ebb51997e71d12888cf832d4d63e794afcf497b3466a13b4e3340b",
+        "permitRefs": [
+          "5c430dcff97e0d4b2af7e5edb6ce2c8b",
+          "dcc05812788782d9b242d19bccbf8121",
+          "57ddafd173d1d3cb0d28a6da33731e42"
+        ],
+        "permits": [
+          "00bf0d763e34c047888c5f29901672f5e4612915bfca012a4c88215423358b8aeeca121220418b0cb97f3165ea73d6ece2c70d4bf7ad1baac0453218dc6d16f21a76da2bd8",
+          "00cef8750fe1b2bf328dd82f7fe19f44ab615b9a59854bf36e094043c281fc292fca12122088eb1d9e34cc132c7fe6f25384d8706cc5e7339de7438542e6419e8cb8e83b20",
+          "001adee639d0b87bd13b5bdca13d05d3fbda1a1cc937ae4ac440acf6d626a18b38ca1212203f2b2bf6cf38af3c7607d0328c4103acb33f3a249edb25aac7acb4384ad30d7f"
+        ],
+        "proposer": "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
+      }
+    }
+  ]
+}
