@@ -20,6 +20,7 @@ Usage: upgrades.py <decentralization-manager-checkout> <dir-with-dars> <dir-with
 """
 import base64
 import json
+import os
 import sys
 import time
 import uuid
@@ -215,7 +216,7 @@ def main():
     print("    the firms' node now vets compressrail 0.0.10")
     b.append(leg_b("B2 once the firms' node vets it, the successor runs", False))
 
-    out_path = f"/root/upgrades-{int(time.time())}.json"
+    out_path = f"{os.environ.get('CR_OUT_DIR', '.')}/upgrades-{int(time.time())}.json"
     json.dump(r.RESULTS, open(out_path, "w"), indent=2)
     r.say(f"Results written to {out_path}")
 

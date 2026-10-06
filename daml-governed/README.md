@@ -51,6 +51,30 @@ dpm build                         # compressrail-governed
 These are the same DAR files a Decentralization Manager v1.12.0 node distributes, so the package ids
 match a real deployment.
 
+## Reproduce on a clean machine
+
+`localnet/reproduce.sh` runs the whole LocalNet evidence from a fresh clone with one command: it builds the
+packages (and checks that their package ids match the ones deployed on DevNet), runs the Daml tests, starts
+Decentralization Manager's sandbox at a pinned commit with the versions DevNet runs (v1.12.0, Splice LocalNet
+0.8.4), runs the governed cycle with its negative tests and visibility read-back (`rehearse.py`), then the
+execution-failure cases (`failures.py`), and prints how many checks passed.
+
+Needs Linux x86-64 or macOS, Docker with Compose v2.1.1+ and at least 12 GB of memory and 4 CPUs for Docker,
+about 20 GB of free disk, and a network connection (the first start pulls the sandbox images). On Ubuntu:
+
+```
+sudo apt-get update
+sudo apt-get install -y docker.io docker-compose-v2 git curl jq python3 default-jdk-headless
+sudo usermod -aG docker "$USER"            # then log out and back in
+curl https://get.digitalasset.com/install/install.sh | sh
+export PATH="$HOME/.dpm/bin:$PATH"
+git clone https://github.com/LevCey/CompressRail.git && cd CompressRail
+daml-governed/localnet/reproduce.sh
+```
+
+The sandbox runs with authentication off: run it on a machine whose ports other hosts cannot reach (a laptop,
+or a server firewalled to SSH). Stop it with `.localnet-work/decentralization-manager/hackathon/down.sh`.
+
 ## DevNet run (`devnet/`)
 
 On 6 October 2026 a compression cycle executed on Canton DevNet through a Decentralized Party that

@@ -165,7 +165,7 @@ def main():
     RESULTS["restart"] = {"identity_fields_unchanged": same, "E_still_listed": still_e, "mesh_connected": connected}
     print(f"    identity fields unchanged: {same}  E listed: {still_e}  mesh connected: {connected}")
 
-    json.dump(RESULTS, open(f"/root/topology-attacks-{int(time.time())}.json", "w"), indent=2)
+    json.dump(RESULTS, open(f"{os.environ.get('CR_OUT_DIR', '.')}/topology-attacks-{int(time.time())}.json", "w"), indent=2)
     say("Results written")
 
 

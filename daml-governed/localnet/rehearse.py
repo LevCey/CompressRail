@@ -430,7 +430,7 @@ def main():
         print(f"    {who:11} pairs {pairs}  foreign {foreign}  governance/proposal {report[who]['saw_proposal_or_governance']}")
     RESULTS["visibility"] = report
 
-    out_path = f"/root/rehearsal-{run}.json"
+    out_path = f"{os.environ.get('CR_OUT_DIR', '.')}/rehearsal-{run}.json"
     json.dump({"run": run, "E": e, "rules": rules, "firms": firms, "results": RESULTS}, open(out_path, "w"), indent=2)
     say(f"Results written to {out_path}")
 

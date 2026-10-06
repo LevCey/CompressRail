@@ -20,3 +20,4 @@ dist/
 # Fetched third-party Daml packages (daml-governed/vendor.sh)
 daml-governed/.vendor/
 daml-governed/localnet/.upgrades/
+.localnet-work/

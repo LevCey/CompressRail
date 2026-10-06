@@ -16,6 +16,7 @@ exact rejection reason.
 
 Usage: failures.py <decentralization-manager-checkout> <dir-with-dars>
 """
+import os
 import sys
 import time
 import uuid
@@ -140,7 +141,7 @@ def main():
     results.append(case("an expired package", "past its deadline", "Daml (package checks)", {
         "setup": lambda run: (e, m1, m2, expiry_iso, ["rAB", "rBC", "rCA"], expiry_t + timedelta(seconds=10))}))
 
-    out = f"/root/failures-{int(time.time())}.json"
+    out = f"{os.environ.get('CR_OUT_DIR', '.')}/failures-{int(time.time())}.json"
     import json
     json.dump(r.RESULTS, open(out, "w"), indent=2)
     r.say(f"{sum(results)}/{len(results)} cases behaved as expected; results in {out}")
