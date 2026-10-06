@@ -65,18 +65,35 @@ cd app && npm run e2e:threenode   # needs all three nodes configured; see scenar
 
 ### Governed execution on DevNet, with BitSafe
 
-On 6 October 2026 a cycle executed through `compressrail-exec`, a Decentralized Party hosted on our operator
-node and on BitSafe's validator, with every threshold 2 of 2. The pair permits name that party as their only
-executor, and the cycle runs as a governed action under Decentralization Manager's `GovernanceRules`, with one
-member from each organisation and a threshold of 2. With only our confirmation, execution was rejected; after
-BitSafe's member confirmed from BitSafe's node, the complete package executed in one transaction. Each firm's
-ledger-effects stream held only its own pairs and no governance contracts; the execution party, and so each of
-its hosts, received the whole package.
+On 6 October 2026, a compression cycle executed on Canton DevNet through `compressrail-exec`, a
+Decentralized Party hosted on CompressRail's operator participant and BitSafe's `iBTC-validator-1`. Topology
+read-backs from our host before and after execution showed 2-of-2 hosting confirmation, party-signing and
+namespace thresholds, with no pending proposals in those checks. Decentralization Manager's deployed
+`GovernanceRules` had one member from each organisation, a threshold of 2 and a 24-hour confirmation
+validity period.
 
-What it does not show: with 2-of-2 hosting, execution stops if either host is down; the stock rules accept any
-action the members approve, which we restrict by policy only; our side confirms through the rules' choices
-directly because our ledger API runs without authentication; the firms share nodes and one test process, and
-trade terms are placeholders. Details, measurements and scripts:
+The pair permits designate `compressrail-exec` as their execution controller. With only our member's
+confirmation, execution through `GovernanceRules` was rejected and the original trades and permits remained
+active. After BitSafe's member `attestor-1` confirmed from its node, our member executed the complete
+three-permit package in one transaction. `GovernanceExecutionResult` records both confirmers; A and B then held
+the net A–B leg, while C held no remaining trades from the run.
+
+For this run, the inspected party-filtered ledger-effects streams contained each firm's own pairs and no
+governance contracts. The execution-party stream, queried on our operator host, contained all three pairs and
+the governance contracts. Both hosts are trusted with that execution-party view by design; we did not
+independently query BitSafe's copy for this measurement.
+
+Limitations: 2-of-2 hosting requires both hosts for execution; this run does not demonstrate outage tolerance.
+Stock `GovernanceRules` can execute any compatible governed action that meets their checks; restricting
+approvals to our cycle action is an operator policy, not an exact-template allowlist in the deployed rules. Our
+manager's confirmation endpoint returned `INVALID_TOKEN` (missing a user ID), so our side confirmed and executed
+the same rules choices directly through the Ledger API with an explicit `userId`. Our operator Ledger API has
+authentication disabled and is restricted to private access. The test firms share infrastructure (A and C are
+on our hosted-demo validator, whose JSON Ledger API is public), their bundle salts are generated in one test
+process, and trade terms are placeholders. The cycle is scripted; this run does not exercise the matcher or
+demonstrate confidentiality of real terms.
+
+Recorded results and reproduction steps:
 [`daml-governed/README.md`](daml-governed/README.md#devnet-run-devnet).
 
 ## The problem

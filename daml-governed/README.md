@@ -63,7 +63,9 @@ Setup:
   on our operator participant (`compressrail-operator-1`) and on BitSafe's `iBTC-validator-1`. Read back from
   our host before and after the run: hosting confirmation threshold 2, party signing keys 2 of 2,
   decentralized namespace 2 of 2, no pending proposals. BitSafe's owner key was compared out of band with the
-  topology.
+  topology. These are separate controls: executing the cycle used the members' confirmations under
+  `GovernanceRules` and both hosts' transaction confirmations; it did not collect new signatures with the
+  party's signing keys.
 - `GovernanceRules` (governance-core-v1, `361d1f28…`), deployed through the tool and accepted by BitSafe:
   members `compressrail-member` (on our operator participant) and `attestor-1` (hosted only on BitSafe's
   node), threshold 2, confirmation timeout 24 hours.
@@ -95,7 +97,8 @@ own rights:
 | firm B (HackCanton participant) | A–B, C–B | none |
 | `compressrail-exec`, read on our host | all three | proposal, confirmations, rules, execution result |
 
-Each host of the execution party receives that view; we read it on our host only. The HackCanton participant
+Both hosts are trusted with the execution party's view by design; we did not independently query BitSafe's
+copy for this measurement. The HackCanton participant
 had only `compressrail` vetted, and the execution did not need the governance packages there.
 
 Where this differs from the tool's standard flow:
@@ -104,22 +107,28 @@ Where this differs from the tool's standard flow:
   the manager sends no user id, and our operator participant runs with Ledger API authentication disabled,
   so the participant cannot take one from a token. Our confirmation and execution therefore exercise
   `GovernanceRules_ConfirmAction` and `GovernanceRules_ExecuteConfirmedAction` directly, as our member with an
-  explicit user id. The checks are the same: they are in `GovernanceRules`.
+  explicit `userId`. The checks are the same: they are in `GovernanceRules`. An explicit `userId` satisfies the
+  Ledger API's submission requirement; it does not authenticate the caller. So this is an application
+  integration with the manager's deployed governance contracts and a direct Ledger API workaround on our side;
+  our side did not run through the manager's confirm and execute endpoints.
 - In test mode the manager's Approvals page lists governance actions only for authenticated parties, so on our
   node the proposal and confirmations show in the party's audit trail instead.
 
 Limits:
 
-- Hosting is 2 of 2: if either host is unavailable, execution stops (measured on LocalNet, below). We make
-  no availability claim.
+- Hosting is 2 of 2: both hosts are required for execution. The outage behaviour was measured on LocalNet
+  (below), not on DevNet; we make no availability claim.
 - Stock `GovernanceRules` execute any `GovernableAction` the members approve. We restrict that by policy:
   members confirm only `CycleExecutionProposal` from `compressrail-governed` `d7ea0996…`, no `BatchGate` is
   created for the execution party, and no package successor is uploaded while permits, proposals or
   confirmations are outstanding. `CompressionRules` (above) is not deployed.
 - Our manager runs in insecure mode, which the tool permits on DevNet only, and our operator participant's
-  Ledger API has authentication disabled; both are reachable only on our host.
-- Firms A and C share our validator, firm B a colocated HackCanton participant, and our two validators run on
-  one host, so this is not each firm on its own infrastructure. The firms' bundle salts are generated in one
+  Ledger API has authentication disabled. The manager's API and the operator participant's Ledger and Admin
+  APIs are reachable only on our host (checked from outside on 6 October 2026: of their ports, only the
+  manager's peer port 9000 is open). This is not a production authentication setup.
+- Firms A and C share our hosted-demo validator, whose JSON Ledger API is public for the demo; firm B is on a
+  colocated HackCanton participant; our two validators run on one host. So this is not each firm on its own
+  infrastructure. The firms' bundle salts are generated in one
   test process. Trade terms are opaque placeholders, and the ring is set up by the script: this run does not
   exercise the matcher.
 
