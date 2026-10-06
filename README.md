@@ -3,8 +3,9 @@
 Confidential multilateral portfolio compression for OTC derivatives, built on the Canton Network.
 
 CompressRail lets a group of derivatives counterparties tear up offsetting bilateral trades and
-atomically redistribute counterparty exposure — without any party, including the operator that runs
-the cycle, ever seeing another participant's positions.
+atomically redistribute counterparty exposure. Economic terms are encrypted on the ledger, and the operator
+party is not a decryption recipient; see [what is exposed](#what-operator-blind-means-here--precisely) for
+the limits.
 
 **Live demo:** [demo.compressrail.com](https://demo.compressrail.com) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com) · **Demo video:** [youtu.be/8XmG6ss5XuY](https://youtu.be/8XmG6ss5XuY)
 
