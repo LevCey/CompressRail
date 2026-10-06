@@ -78,6 +78,14 @@ The sandbox runs with authentication off: run it on a machine whose ports other 
 or a server firewalled to SSH). Stop it with `.localnet-work/decentralization-manager/hackathon/down.sh`; to run
 the script again, first wipe the sandbox with `.localnet-work/decentralization-manager/hackathon/reset.sh --yes`.
 
+Checked on 6 October 2026 (UTC) on a fresh Ubuntu 26.04 VPS (ARM64, 8 vCPU, 16 GB), as a new non-root user
+following exactly the steps above plus the emulation package: both package ids matched the DevNet deployment,
+27 and 17 Daml tests passed, and all 7 ledger checks passed (one confirmation, member as executor, one node as
+the party, replay, incomplete package, withdrawn permit, expired package). The visibility read-back matched
+DevNet's: each firm saw only its own two pairs and no governance contracts. With the images already pulled the
+run took 13 minutes; the first image pull adds several minutes. Not separately checked on a clean x86-64 machine,
+where the manager image runs natively.
+
 ## DevNet run (`devnet/`)
 
 On 6 October 2026 a compression cycle executed on Canton DevNet through a Decentralized Party that
