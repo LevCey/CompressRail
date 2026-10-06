@@ -86,6 +86,10 @@ git -C "$DM" checkout -q "$DM_COMMIT"
 sed -i.bak -E "s#^LOCALNET_VERSION=.*#LOCALNET_VERSION=$LOCALNET_VERSION#; s#^DECMAN_IMAGE=.*#DECMAN_IMAGE=$DECMAN_IMAGE#" \
     "$DM/hackathon/versions.env" && rm -f "$DM/hackathon/versions.env.bak"
 grep -E "^(LOCALNET_VERSION|DECMAN_IMAGE)=" "$DM/hackathon/versions.env" | sed 's/^/    /'
+# The scripts expect a freshly seeded sandbox; data left by an earlier run makes them fail part-way.
+if docker volume ls --format '{{.Name}}' | grep -qE '^(decman-hackathon|localnet)_'; then
+    die "a sandbox from an earlier run still has data. Wipe it with: $DM/hackathon/reset.sh --yes  (then rerun)"
+fi
 (cd "$DM" && ./hackathon/up.sh && ./hackathon/seed.sh)
 
 step "Governed cycle (rehearse.py) and execution failures (failures.py)"

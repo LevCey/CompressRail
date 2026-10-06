@@ -75,7 +75,8 @@ daml-governed/localnet/reproduce.sh
 ```
 
 The sandbox runs with authentication off: run it on a machine whose ports other hosts cannot reach (a laptop,
-or a server firewalled to SSH). Stop it with `.localnet-work/decentralization-manager/hackathon/down.sh`.
+or a server firewalled to SSH). Stop it with `.localnet-work/decentralization-manager/hackathon/down.sh`; to run
+the script again, first wipe the sandbox with `.localnet-work/decentralization-manager/hackathon/reset.sh --yes`.
 
 ## DevNet run (`devnet/`)
 
