@@ -12,23 +12,27 @@ export default function Overview() {
       </p>
       <p>
         CompressRail lets a group of derivatives counterparties tear up offsetting
-        bilateral trades and atomically redistribute counterparty exposure —
-        without any party, including the operator that runs the cycle, ever seeing
-        another participant&apos;s positions.
+        bilateral trades and atomically redistribute counterparty exposure.
+        Economic terms are encrypted on the ledger, and the operator party is not a
+        decryption recipient; see <Link href="/privacy-model">Privacy model and
+        boundary</Link> for what is exposed.
       </p>
       <blockquote>
         <strong>Status:</strong> early development. Runs on Canton DevNet. Not
         audited. Not for production use.
       </blockquote>
 
-      <h2>The one claim</h2>
+      <h2>The claim</h2>
       <blockquote>
-        The operator computed and committed a multilateral compression cycle
-        without being able to read a single position.
+        The operator party coordinated and committed an atomic multilateral
+        compression cycle without being a decryption recipient of any
+        participant&apos;s terms.
       </blockquote>
       <p>
-        That sentence is the entire product. Everything else in this
-        documentation exists to make it precise, falsifiable, and bounded.
+        Everything else in this documentation exists to make that precise,
+        falsifiable, and bounded. In this build the matching runs with all inputs
+        in one place; private matching and reduced execution visibility are
+        separate roadmap items.
       </p>
 
       <h2>The problem</h2>
@@ -59,7 +63,7 @@ export default function Overview() {
       <p>
         CompressRail moves the trust boundary from the operator to the protocol.
         The operator coordinates a compression cycle but is architecturally
-        unable to see any participant&apos;s economic terms. Each participant
+        unable to read any participant&apos;s economic terms. Each participant
         verifies, on its own node, that its post-cycle risk stays within its
         declared tolerance, and authorizes only its own legs. The whole
         multilateral rebalance commits atomically — every leg or none. A
