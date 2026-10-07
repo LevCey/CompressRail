@@ -81,8 +81,9 @@ the net A–B leg, while C held no remaining trades from the run.
 
 For this run, the inspected party-filtered ledger-effects streams contained each firm's own pairs and no
 governance contracts. The execution-party stream, queried on our operator host, contained all three pairs and
-the governance contracts. Both hosts are trusted with that execution-party view by design; we did not
-independently query BitSafe's copy for this measurement.
+the governance contracts. BitSafe's manager on `iBTC-validator-1` shows the same execution in its audit trail:
+the three permit exercises, the three trade archives, the net-leg create and the execution result, with the same
+contract ids (screenshot shared by BitSafe on 7 October).
 
 Limitations: 2-of-2 hosting requires both hosts for execution; this run does not demonstrate outage tolerance.
 Stock `GovernanceRules` can execute any compatible governed action that meets their checks; restricting

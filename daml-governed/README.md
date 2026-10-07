@@ -135,8 +135,11 @@ own rights:
 | firm B (HackCanton participant) | A–B, C–B | none |
 | `compressrail-exec`, read on our host | all three | proposal, confirmations, rules, execution result |
 
-Both hosts are trusted with the execution party's view by design; we did not independently query BitSafe's
-copy for this measurement. The HackCanton participant
+BitSafe read the execution back on its host: a screenshot of its manager's audit trail on `iBTC-validator-1`,
+shared in our joint channel on 7 October 2026, shows the proposal's execution, the three `Permit_Execute`
+exercises, the three trade archives, the net-leg create and the `GovernanceExecutionResult`, with the same
+contract ids and times as on our host (`bitsafe_readback` in the results file). That is BitSafe's manager view,
+not a ledger-effects export. The HackCanton participant
 had only `compressrail` vetted, and the execution did not need the governance packages there.
 
 Where this differs from the tool's standard flow:

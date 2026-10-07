@@ -314,5 +314,19 @@
         "proposer": "compressrail-member::12208d9dd0808f8345d89ba250d2cc261c932c05909e64243dc4fcb7d8b685171eb2"
       }
     }
-  ]
+  ],
+  "bitsafe_readback": {
+    "source": "Screenshot of the Decentralization Manager audit trail on iBTC-validator-1, shared by BitSafe in the joint Slack channel on 2026-10-07 (\"Yes, it's visible in the audit log\")",
+    "displayed_timezone": "UTC+8 (01:00:19 = 17:00:19 UTC; 21:57:13 = 13:57:13 UTC)",
+    "rows_matched": [
+      "GovernableAction_Execute on the proposal 007926a3…2ae92f4c",
+      "Permit_Execute on 00bf0d76…76da2bd8, 00cef875…b8e83b20, 001adee6…4ad30d7f (the three permits)",
+      "Archive of 00642984…9f50ccb7, 00557534…1e8749ed, 00ccc97d…a1d126a6 (the three trades)",
+      "create BilateralTrade 005f0522…da3f7ad4 (the net leg)",
+      "GovernanceExecutionResult 00410306…e514b7a0",
+      "GovernanceRules_ConfirmAction on 002c3e7e…4720ca6d at 13:57:13 UTC (attestor-1's confirmation)"
+    ],
+    "unmatched_rows": [],
+    "limits": "BitSafe's manager view as displayed (contract ids truncated by the UI, update id not shown); not a ledger-effects export"
+  }
 }
