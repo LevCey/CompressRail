@@ -140,7 +140,9 @@ flowchart TB
 Technical owner: Levent Ceyhan (CompressRail, [@LevCey](https://github.com/LevCey)).
 
 `compressrail-exec` stays on DevNet after the hackathon. It needs both hosts, so continuing to operate it depends
-on BitSafe keeping its host and member, which we will agree with BitSafe. Remaining work, in order:
+on BitSafe keeping its host and member, which we will agree with BitSafe. Next milestone, by 30 November 2026:
+the authenticated deployment (item 1) rehearsed on a separate setup, and a date agreed with BitSafe for switching
+our operator node over and for the next joint run. Remaining work, in order:
 
 1. An authenticated deployment: OIDC for our Decentralization Manager and JWT authentication on our operator
    participant, rehearsed on a separate setup first, then switched over with BitSafe when no proposal or
