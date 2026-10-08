@@ -77,11 +77,13 @@ match a real deployment.
 
 ## Reproduce on a clean machine
 
-`localnet/reproduce.sh` runs the whole LocalNet evidence from a fresh clone with one command: it builds the
+`localnet/reproduce.sh` runs the core LocalNet evidence from a fresh clone with one command: it builds the
 packages (and checks that their package ids match the ones deployed on DevNet), runs the Daml tests, starts
 Decentralization Manager's sandbox at a pinned commit with the versions DevNet runs (v1.12.0, Splice LocalNet
 0.8.4), runs the governed cycle with its negative tests and visibility read-back (`rehearse.py`), then the
-execution-failure cases (`failures.py`), and prints how many checks passed.
+execution-failure cases (`failures.py`), and prints how many checks passed. It does not run the separate
+host-outage, topology-change and upgrade experiments; their commands are under
+[LocalNet rehearsal](#localnet-rehearsal-localnet).
 
 Needs Linux or macOS, Docker with Compose v2.1.1+ and at least 12 GB of memory and 4 CPUs for Docker, about
 20 GB of free disk, and a network connection (the first start pulls several GB of images). The Decentralization
@@ -161,9 +163,11 @@ own rights:
 
 BitSafe read the execution back on its host: a screenshot of its manager's audit trail on `iBTC-validator-1`,
 shared in our joint channel on 7 October 2026, shows the proposal's execution, the three `Permit_Execute`
-exercises, the three trade archives, the net-leg create and the `GovernanceExecutionResult`, with the same
-contract ids and times as on our host (`bitsafe_readback` in the results file). That is BitSafe's manager view,
-not a ledger-effects export. The HackCanton participant
+exercises, the three trade archives, the net-leg create and the `GovernanceExecutionResult`. The displayed
+contract-id fragments of these nine rows, and of the earlier confirmation row, match our recorded results, and
+the execution time matches (shown as 7 October 01:00:19 UTC+8, that is 6 October 17:00:19 UTC). This
+corroborates the execution in BitSafe's manager view; the screenshot shows abbreviated ids and no update id, and
+it is not a ledger-effects export (`bitsafe_readback` in the results file). The HackCanton participant
 had only `compressrail` vetted, and the execution did not need the governance packages there.
 
 Where this differs from the tool's standard flow:

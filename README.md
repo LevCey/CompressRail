@@ -7,10 +7,16 @@ atomically redistribute counterparty exposure. Economic terms are encrypted on t
 party is not a decryption recipient; see [what is exposed](#what-operator-blind-means-here--precisely) for
 the limits.
 
-**Live demo:** [demo.compressrail.com](https://demo.compressrail.com) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com) · **Demo video:** [youtu.be/8XmG6ss5XuY](https://youtu.be/8XmG6ss5XuY)
-· **Reproduce the governed cycle (LocalNet, one command):** [`daml-governed/localnet/reproduce.sh`](daml-governed/README.md#reproduce-on-a-clean-machine)
+> **HackCanton Season 3 / BitSafe Gold: governed execution on DevNet.** A compression cycle executed on
+> 6 October 2026 through a Decentralized Party that CompressRail and BitSafe operate together: rejected with
+> one approval, executed with both. [What ran and what it does not show](#governed-execution-on-devnet-with-bitsafe)
+> · [recorded results](daml-governed/devnet/results-2026-10-06.json)
+> · [the same flow on LocalNet in one command](daml-governed/README.md#reproduce-on-a-clean-machine)
 
-> **Status:** early-stage MVP for the Encode "Build on Canton" hackathon (June–July 2026). The demo,
+**Hosted demo:** [demo.compressrail.com](https://demo.compressrail.com) (single participant, operator-executed cycle) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com) · **Hosted-demo video:** [youtu.be/8XmG6ss5XuY](https://youtu.be/8XmG6ss5XuY)
+
+> **Status:** early-stage MVP, first built for the Encode "Build on Canton" hackathon (June–July 2026); the
+> governed DevNet execution was added for HackCanton Season 3 (October 2026). The demo,
 > landing, and docs sites are live, and the demo runs **against our own Canton DevNet validator** —
 > real transactions through the DevNet global synchronizer, including the atomic compression cycle,
 > selective disclosure, and the operator-blindness check the privacy matrix and "try to cheat" control
@@ -70,7 +76,8 @@ cd app && npm run e2e:threenode   # needs all three nodes configured; see scenar
 The risk addressed: the right to execute a compression cycle sits with one operator. In the hosted demo, once
 the firms commit, that operator alone executes the cycle, and every committed firm receives the whole cycle.
 Here the execution right moves to a Decentralized Party that two independently operated organisations control
-together; through the governed action it can execute only the complete approved package, and each firm signs
+together; through the governed action, `CycleExecutionProposal`, it can execute only the complete approved
+package, and each firm signs
 only the permits for its own pairs.
 
 On 6 October 2026, a compression cycle executed on Canton DevNet through `compressrail-exec`, a
@@ -88,9 +95,10 @@ the net A–B leg, while C held no remaining trades from the run.
 
 For this run, the inspected party-filtered ledger-effects streams contained each firm's own pairs and no
 governance contracts. The execution-party stream, queried on our operator host, contained all three pairs and
-the governance contracts. BitSafe's manager on `iBTC-validator-1` shows the same execution in its audit trail:
-the three permit exercises, the three trade archives, the net-leg create and the execution result, with the same
-contract ids (screenshot shared by BitSafe on 7 October).
+the governance contracts. BitSafe's manager on `iBTC-validator-1` shows the execution in its audit trail: the
+three permit exercises, the three trade archives, the net-leg create and the execution result, with displayed
+contract-id fragments matching ours (a screenshot shared by BitSafe on 7 October; the UI abbreviates ids and does
+not show the update id).
 
 Limitations: 2-of-2 hosting requires both hosts for execution; this run does not demonstrate outage tolerance.
 Stock `GovernanceRules` can execute any compatible governed action that meets their checks; restricting
@@ -139,7 +147,7 @@ on BitSafe keeping its host and member, which we will agree with BitSafe. Remain
    confirmation is open. Our side can then use the manager's own confirm and execute.
 2. Rules that admit only the cycle action, so the restriction is enforced on the ledger rather than by policy
    (prototype: [`daml-governed/rules`](daml-governed/README.md#restricting-which-actions-the-party-can-execute-prototype)),
-   proposed upstream to Decentralization Manager.
+   prepared for discussion upstream with Decentralization Manager.
 3. Each test firm on a node of its own, with its keys in its own process.
 4. Private matching, then MainNet with a MainNet validator and an independent second member.
 
