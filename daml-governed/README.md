@@ -71,7 +71,8 @@ match a real deployment.
   what each party receives is tested rather than assumed.
 - **Two integration findings** for teams on the same versions: with the manager in insecure mode and a
   participant whose Ledger API has authentication disabled, the manager's `/governance/confirm` fails with a
-  missing user id (exercising the rules' choices with an explicit `userId` works); and the Approvals page lists
+  missing user id (exercising the rules' choices with an explicit `userId` works; also described in upstream
+  [PR #516](https://github.com/DLC-link/decentralization-manager/pull/516)); and the Approvals page lists
   governance actions only for authenticated parties (the party's audit trail shows them).
 
 ## Reproduce on a clean machine
