@@ -67,10 +67,11 @@ cd app && npm run e2e:threenode   # needs all three nodes configured; see scenar
 
 ### Governed execution on DevNet, with BitSafe
 
-The risk addressed: whoever can execute a compression cycle can tear up and replace every firm's trades in it.
-In the hosted demo that is one operator, and every committed firm receives the whole cycle. Here the execution
-right moves to a Decentralized Party that two independently operated organisations control together, and each
-firm signs only the permits for its own pairs.
+The risk addressed: the right to execute a compression cycle sits with one operator. In the hosted demo, once
+the firms commit, that operator alone executes the cycle, and every committed firm receives the whole cycle.
+Here the execution right moves to a Decentralized Party that two independently operated organisations control
+together; through the governed action it can execute only the complete approved package, and each firm signs
+only the permits for its own pairs.
 
 On 6 October 2026, a compression cycle executed on Canton DevNet through `compressrail-exec`, a
 Decentralized Party hosted on CompressRail's operator participant and BitSafe's `iBTC-validator-1`. Topology
