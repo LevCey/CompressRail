@@ -8,6 +8,7 @@ party is not a decryption recipient; see [what is exposed](#what-operator-blind-
 the limits.
 
 **Live demo:** [demo.compressrail.com](https://demo.compressrail.com) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com) · **Demo video:** [youtu.be/8XmG6ss5XuY](https://youtu.be/8XmG6ss5XuY)
+· **Reproduce the governed cycle (LocalNet, one command):** [`daml-governed/localnet/reproduce.sh`](daml-governed/README.md#reproduce-on-a-clean-machine)
 
 > **Status:** early-stage MVP for the Encode "Build on Canton" hackathon (June–July 2026). The demo,
 > landing, and docs sites are live, and the demo runs **against our own Canton DevNet validator** —
@@ -97,6 +98,44 @@ demonstrate confidentiality of real terms.
 
 Recorded results and reproduction steps:
 [`daml-governed/README.md`](daml-governed/README.md#devnet-run-devnet).
+
+#### Before and after
+
+```mermaid
+flowchart TB
+  subgraph before["Before: one operator executes"]
+    OP["CompressRail's operator node"] -->|"exercises Execute on the cycle contract, alone"| C1["every trade torn up, every new leg created"]
+    F0["Firms A, B, C"] -.->|"each committed firm receives the whole cycle"| C1
+  end
+  subgraph after["After: a governed execution party"]
+    G["GovernanceRules: members compressrail-member and attestor-1, threshold 2"] -->|"both members confirm"| E["compressrail-exec, hosted on CompressRail's and BitSafe's nodes, 2 of 2"]
+    E -->|"the complete package, one transaction"| P["pair permits A–B, C–B, C–A, each signed by its two firms"]
+    F1["Firms A, B, C"] -.->|"each firm receives its own pairs only"| P
+  end
+```
+
+#### Nodes, operators and plan beyond the hackathon
+
+| Node | Operator | Hosts | Independent of CompressRail? |
+|---|---|---|---|
+| `compressrail-operator-1` | CompressRail | `compressrail-exec` (confirmation), member `compressrail-member` | — |
+| `iBTC-validator-1` | BitSafe | `compressrail-exec` (confirmation), member `attestor-1` | yes: separate organisation, node, Decentralization Manager and keys |
+| our DevNet validator (also the hosted demo) | CompressRail | test firms A and C | no; it shares a host with `compressrail-operator-1` |
+| HackCanton participant | NODERS | test firm B | separate operator, but a shared participant with other tenants |
+
+Technical owner: Levent Ceyhan (CompressRail, [@LevCey](https://github.com/LevCey)).
+
+`compressrail-exec` stays on DevNet after the hackathon. It needs both hosts, so continuing to operate it depends
+on BitSafe keeping its host and member, which we will agree with BitSafe. Remaining work, in order:
+
+1. An authenticated deployment: OIDC for our Decentralization Manager and JWT authentication on our operator
+   participant, rehearsed on a separate setup first, then switched over with BitSafe when no proposal or
+   confirmation is open. Our side can then use the manager's own confirm and execute.
+2. Rules that admit only the cycle action, so the restriction is enforced on the ledger rather than by policy
+   (prototype: [`daml-governed/rules`](daml-governed/README.md#restricting-which-actions-the-party-can-execute-prototype)),
+   proposed upstream to Decentralization Manager.
+3. Each test firm on a node of its own, with its keys in its own process.
+4. Private matching, then MainNet with a MainNet validator and an independent second member.
 
 ## The problem
 
@@ -285,8 +324,9 @@ This is a hackathon MVP focused on the privacy architecture, not a production co
   sealed legs, and the demo itself across nodes.
 - Private matching: computing the match without collecting every firm's net risk in one place
   (multi-party computation). On its own this does not hide who the new trades are between.
-- Reduced execution visibility: executing a cycle without every participant receiving every other
-  pair's trades, without giving up all-or-nothing execution.
+- Reduced execution visibility in the hosted demo: the governed path on DevNet already executes a cycle
+  with each firm receiving only its own pairs; the hosted demo still uses the earlier cycle contract, where
+  every committed firm receives the whole cycle.
 - Each firm's keys in its own process, with the operator's software unable to reach any of them.
 - Replacement trades modeled against the parties' existing master agreements.
 - Settlement integration for the cash leg.

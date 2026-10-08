@@ -51,6 +51,29 @@ dpm build                         # compressrail-governed
 These are the same DAR files a Decentralization Manager v1.12.0 node distributes, so the package ids
 match a real deployment.
 
+## Reusable pieces
+
+- **Package-bound execution** (`../daml/CompressRail/Gate.daml`, `daml/CompressRail/Governed.daml`). For any
+  workflow where several bilateral contracts must change together, and only as the complete approved set:
+  each pair signs a permit naming the execution party as its only executor; the governed action checks the
+  gate, rejects missing, extra and duplicate permits, recomputes each party's bundle hash from the salts, and
+  exercises every permit in one transaction. To adapt it, replace the trade and leg types in
+  `ExecutionPermit` and `Permit_Execute`; `executePackage` and the bundle check stay. Tests:
+  `../daml/CompressRail/Test/Gate.daml` and `test/`.
+- **`localnet/topology.sh`** reads any Decentralized Party's hosting, signing-key and namespace thresholds and
+  lists pending topology proposals from a participant's Admin API (needs `grpcurl`). Worth running before and
+  after every session: a pending proposal signed by one owner takes effect if another owner signs it.
+- **`localnet/reproduce.sh`** pins Decentralization Manager's sandbox to a commit and to the target network's
+  versions, checks package ids against a deployment, and runs an application's checks: a starting point for
+  another team's CI.
+- **Visibility measurement** (`rehearse.py`, `devnet/cycle.py evidence`, `devnet/firm_b.py evidence`): reads each
+  party's ledger-effects stream with that party's own rights and classifies the events by business object, so
+  what each party receives is tested rather than assumed.
+- **Two integration findings** for teams on the same versions: with the manager in insecure mode and a
+  participant whose Ledger API has authentication disabled, the manager's `/governance/confirm` fails with a
+  missing user id (exercising the rules' choices with an explicit `userId` works); and the Approvals page lists
+  governance actions only for authenticated parties (the party's audit trail shows them).
+
 ## Reproduce on a clean machine
 
 `localnet/reproduce.sh` runs the whole LocalNet evidence from a fresh clone with one command: it builds the
