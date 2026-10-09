@@ -98,8 +98,9 @@ For this run, the inspected party-filtered ledger-effects streams contained each
 governance contracts. The execution-party stream, queried on our operator host, contained all three pairs and
 the governance contracts. BitSafe's manager on `iBTC-validator-1` shows the execution in its audit trail: the
 three permit exercises, the three trade archives, the net-leg create and the execution result, with displayed
-contract-id fragments matching ours (a screenshot shared by BitSafe on 7 October; the UI abbreviates ids and does
-not show the update id).
+contract-id fragments matching ours ([screenshot](daml-governed/devnet/bitsafe-audit-trail-2026-10-07.png) from
+BitSafe's DevNet Decentralization Manager, shared on 7 October and published with its permission; the UI
+abbreviates ids and does not show the update id).
 
 Limitations: 2-of-2 hosting requires both hosts for execution; this run does not demonstrate outage tolerance.
 Stock `GovernanceRules` can execute any compatible governed action that meets their checks; restricting
@@ -140,8 +141,9 @@ flowchart TB
 
 Technical owner: Levent Ceyhan (CompressRail, [@LevCey](https://github.com/LevCey)).
 
-`compressrail-exec` stays on DevNet after the hackathon. It needs both hosts, so continuing to operate it depends
-on BitSafe keeping its host and member, which we will agree with BitSafe. Next milestone, by 30 November 2026:
+`compressrail-exec` stays on DevNet after the hackathon. It needs both hosts; BitSafe has confirmed (9 October
+2026) that it will keep its host and member on DevNet for testing after the hackathon. Terms for a MainNet
+deployment would be agreed with BitSafe closer to it. Next milestone, by 30 November 2026:
 the authenticated deployment (item 1) rehearsed on a separate setup, and a date agreed with BitSafe for switching
 our operator node over and for the next joint run. Remaining work, in order:
 

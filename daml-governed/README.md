@@ -168,7 +168,13 @@ exercises, the three trade archives, the net-leg create and the `GovernanceExecu
 contract-id fragments of these nine rows, and of the earlier confirmation row, match our recorded results, and
 the execution time matches (shown as 7 October 01:00:19 UTC+8, that is 6 October 17:00:19 UTC). This
 corroborates the execution in BitSafe's manager view; the screenshot shows abbreviated ids and no update id, and
-it is not a ledger-effects export (`bitsafe_readback` in the results file). The HackCanton participant
+it is not a ledger-effects export (`bitsafe_readback` in the results file).
+
+![BitSafe's Decentralization Manager audit trail on iBTC-validator-1](devnet/bitsafe-audit-trail-2026-10-07.png)
+
+*From BitSafe's DevNet Decentralization Manager on iBTC-validator-1, shared by BitSafe on 7 October 2026 and
+published here with its permission. The UI shows UTC+8: 01:00:19 on 7 October is 17:00:19 UTC on 6 October.
+Contract ids are abbreviated; no update id is shown.* The HackCanton participant
 had only `compressrail` vetted, and the execution did not need the governance packages there.
 
 Where this differs from the tool's standard flow:
