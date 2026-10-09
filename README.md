@@ -9,7 +9,8 @@ the limits.
 
 > **HackCanton Season 3 / BitSafe Gold: governed execution on DevNet.** A compression cycle executed on
 > 6 October 2026 through a Decentralized Party that CompressRail and BitSafe operate together: rejected with
-> one approval, executed with both. [What ran and what it does not show](#governed-execution-on-devnet-with-bitsafe)
+> one approval, executed with both. **[Demo video](https://youtu.be/LePfsZgKgHQ)**
+> · [what ran and what it does not show](#governed-execution-on-devnet-with-bitsafe)
 > · [recorded results](daml-governed/devnet/results-2026-10-06.json)
 > · [the same flow on LocalNet in one command](daml-governed/README.md#reproduce-on-a-clean-machine)
 
@@ -110,7 +111,7 @@ on our hosted-demo validator, whose JSON Ledger API is public), their bundle sal
 process, and trade terms are placeholders. The cycle is scripted; this run does not exercise the matcher or
 demonstrate confidentiality of real terms.
 
-Recorded results and reproduction steps:
+Video of the run: [youtu.be/LePfsZgKgHQ](https://youtu.be/LePfsZgKgHQ). Recorded results and reproduction steps:
 [`daml-governed/README.md`](daml-governed/README.md#devnet-run-devnet).
 
 #### Before and after

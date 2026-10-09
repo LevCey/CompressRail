@@ -119,6 +119,7 @@ governance contracts.
 
 On 6 October 2026 a compression cycle executed on Canton DevNet through a Decentralized Party that
 CompressRail and BitSafe control together. Identifiers and measurements: `devnet/results-2026-10-06.json`.
+Video: [youtu.be/LePfsZgKgHQ](https://youtu.be/LePfsZgKgHQ).
 
 Setup:
 
