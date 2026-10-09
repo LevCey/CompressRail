@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CompressRail — Confidential multilateral compression on Canton",
   description:
-    "Multilateral OTC-derivatives compression on Canton where no party — not even the operator — ever sees another participant's book.",
+    "Multilateral OTC-derivatives compression on Canton: trade terms are encrypted for the two counterparties of each trade, and the operator cannot read them.",
 };
 
 export default function RootLayout({

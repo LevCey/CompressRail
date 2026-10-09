@@ -64,7 +64,7 @@ export default function Overview() {
         CompressRail moves the trust boundary from the operator to the protocol.
         The operator coordinates a compression cycle but is architecturally
         unable to read any participant&apos;s economic terms. Each participant
-        verifies, on its own node, that its post-cycle risk stays within its
+        verifies, on the node that hosts it, that its post-cycle risk stays within its
         declared tolerance, and authorizes only its own legs. The whole
         multilateral rebalance commits atomically — every leg or none. A
         participant can grant its home regulator a read-only view scoped to that

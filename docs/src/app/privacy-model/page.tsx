@@ -14,8 +14,8 @@ export default function PrivacyModel() {
 
       <h2>What &quot;operator-blind&quot; means, precisely</h2>
       <p>
-        The operator never sees any participant&apos;s economic terms —
-        positions, sensitivities, notionals, or trade details. Two mechanisms
+        The operator cannot read any participant&apos;s economic terms —
+        positions, sensitivities, notionals or rates. Two mechanisms
         enforce this together:
       </p>
       <ul>

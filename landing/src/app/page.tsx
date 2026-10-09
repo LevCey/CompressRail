@@ -37,15 +37,26 @@ export default function Home() {
       <main className="flex flex-1 flex-col items-center px-6 py-20">
         <div className="flex max-w-2xl flex-col items-center gap-6 text-center">
           <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-            Multilateral OTC-derivatives compression on Canton where no party —
-            <span className="text-accent-propose"> not even the operator</span> —
-            ever sees another participant&apos;s book.
+            Multilateral OTC-derivatives compression on Canton where{" "}
+            <span className="text-accent-propose">the operator</span>{" "}
+            cannot read any participant&apos;s trade terms.
           </h1>
           <p className="text-sm text-muted sm:text-base">
             Counterparties tear up offsetting bilateral trades and atomically
             redistribute counterparty exposure. The operator coordinates the cycle
             without being able to read any participant&apos;s positions, sensitivities, or
             trade terms.
+          </p>
+          <p className="text-sm text-muted">
+            October 2026: a cycle executed on Canton DevNet through a Decentralized Party that
+            CompressRail and BitSafe operate together, rejected with one approval and executed
+            with both.{" "}
+            <a
+              href="https://github.com/LevCey/CompressRail#governed-execution-on-devnet-with-bitsafe"
+              className="text-foreground underline underline-offset-2"
+            >
+              What ran, and its limits
+            </a>
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <a
@@ -120,8 +131,8 @@ export default function Home() {
             What &quot;operator-blind&quot; means — precisely
           </h2>
           <p className="text-muted">
-            The operator never sees a participant&apos;s cleartext economic
-            terms — positions, sensitivities, notionals, or trade details. Two
+            The operator cannot read a participant&apos;s economic
+            terms — positions, sensitivities, notionals or rates. Two
             mechanisms enforce this together: the operator is never a signatory or
             observer on a position-bearing contract, and every economic field is
             written on-ledger only as authenticated-encryption ciphertext, with the
@@ -132,8 +143,8 @@ export default function Home() {
             operator and every firm invited to a cycle receive its transaction
             metadata — who the torn-up and new trades are between, as ciphertext —
             and a firm can infer some amounts from its own trades and the outcome.
-            Private matching and reduced execution visibility are on the roadmap,
-            not in this build. This is not zero-knowledge,
+            Private matching is on the roadmap, not in this build; reduced execution
+            visibility is shown in the governed DevNet run, not in this hosted demo. This is not zero-knowledge,
             not fully homomorphic encryption, and not MPC. It does not make
             replacement trades legally enforceable, and it never takes custody of
             any asset.

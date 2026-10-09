@@ -140,7 +140,7 @@ the net-short ones, so the result preserves every party's net risk while collaps
 the gross web of trades — a perfectly offsetting ring compresses to zero legs. It is
 a small, real, deterministic algorithm over fixture cleartext, standing in for the
 per-node multi-party computation a production system would run; it is never the
-operator, which only ever sees the resulting topology and commitments. Production
+operator, which receives only the resulting topology, commitments and ciphertext. Production
 risk models (SIMM, SA-CCR, CRIF) are out of scope.
 
 ## Ledger access

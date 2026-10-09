@@ -175,7 +175,7 @@ changes who participates is the hypothesis we are testing, not a result we are r
 
 CompressRail moves the trust boundary from the operator to the protocol. The operator coordinates a
 compression cycle but is architecturally unable to read any participant's economic terms. Each
-participant verifies, on its own node, that its post-cycle risk stays within its declared tolerance, and
+participant verifies, on the node that hosts it, that its post-cycle risk stays within its declared tolerance, and
 authorizes only its own legs. The whole multilateral rebalance commits atomically — every leg or none.
 A participant can grant its home regulator a read-only view scoped to that participant's contracts alone.
 
@@ -183,8 +183,8 @@ A participant can grant its home regulator a read-only view scoped to that parti
 
 Privacy claims in this space are easy to overstate, so here is the exact boundary.
 
-The operator never sees any participant's economic terms — positions, sensitivities, notionals, or trade
-details. Two mechanisms enforce this together:
+The operator cannot read any participant's economic terms — positions, sensitivities, notionals or rates.
+Two mechanisms enforce this together:
 
 1. **Daml stakeholder scoping.** The operator is never a signatory or observer on any contract that
    carries a participant's trade, so it is not notified when those trades are created and never holds
@@ -240,7 +240,7 @@ The lifecycle of one compression cycle:
 2. The operator opens a cycle: a proposal carrying a cycle id, the trades to tear up (referenced
    directly by contract id — the model also defines a `NominateIntoCycle` marker, not yet used in this
    build), the netting topology, and a deadline. It carries no economic terms.
-3. Each participant, on its own node, decrypts its own legs, computes its post-cycle risk delta against
+3. Each participant, on the node that hosts it, decrypts its own legs, computes its post-cycle risk delta against
    its tolerance, and — only if it passes — publishes a participation contract: its commitments to the
    legs it will tear up and the replacements it will sign, plus a boolean attestation. This computation
    runs participant-side, never operator-side.
