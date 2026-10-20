@@ -115,6 +115,36 @@ passed (one confirmation, member as executor, one node as the party, replay, inc
 expired package). The visibility read-back matched DevNet's: each firm saw only its own two pairs and no
 governance contracts.
 
+## Five firms on LocalNet (`localnet/multifirm.py`)
+
+*Added on 20 October 2026, after the HackCanton submission deadline, in response to the judges' feedback
+asking for a richer multi-party workflow.*
+
+Five firms on one node, eight trades between eight counterparty pairs, one risk factor with test amounts. The
+matcher (`app/solver/match.ts`, scenario pinned in `app/solver/fivefirm.test.ts`) turns them into two net legs,
+A–B 50 and D–E 20: gross 400 becomes 70, and firm C nets out. In this scenario both legs are between firms that
+already traded, in the same direction and smaller; the matcher does not guarantee that in general. Each pair
+signs one permit for its own trades and legs only, so each firm signs three or four of the eight.
+
+Measured on 20 October 2026, two runs on a fresh Ubuntu x86-64 VPS, after `reproduce.sh`:
+
+- Both members approved the package, then firm E withdrew its E–C permit: execution failed, and every firm
+  still held all its trades.
+- E and C signed the E–C permit again. On a new proposal, one confirmation was not enough; with both, all
+  eight permits executed in one transaction. Holdings afterwards: A and B the A–B leg, D and E the D–E leg, C
+  nothing, as planned by the matcher.
+- Each firm's ledger-effects stream held only its own three or four pairs and no governance contracts; the
+  execution party's stream held all eight pairs and the governance contracts. Every event was classified by
+  contract id or reference.
+
+Results: `localnet/results-multifirm-2026-10-20.json`. Terms are placeholders and all five firms share one
+participant, so this measures per-party views, not per-firm infrastructure.
+
+```
+daml-governed/localnet/reproduce.sh           # first: builds, starts the sandbox, runs the core checks
+cd .localnet-work && CR_OUT_DIR=$PWD python3 ../daml-governed/localnet/multifirm.py decentralization-manager dars
+```
+
 ## DevNet run (`devnet/`)
 
 On 6 October 2026 a compression cycle executed on Canton DevNet through a Decentralized Party that

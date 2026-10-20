@@ -1,0 +1,213 @@
+{
+  "run": "dd8809",
+  "scenario": {
+    "trades": [
+      [
+        "t1",
+        "A",
+        "B",
+        100
+      ],
+      [
+        "t2",
+        "B",
+        "C",
+        80
+      ],
+      [
+        "t3",
+        "C",
+        "A",
+        60
+      ],
+      [
+        "t4",
+        "C",
+        "D",
+        50
+      ],
+      [
+        "t5",
+        "D",
+        "B",
+        30
+      ],
+      [
+        "t6",
+        "D",
+        "E",
+        40
+      ],
+      [
+        "t7",
+        "E",
+        "C",
+        30
+      ],
+      [
+        "t8",
+        "A",
+        "E",
+        10
+      ]
+    ],
+    "legs": [
+      [
+        "n1",
+        "A",
+        "B",
+        50
+      ],
+      [
+        "n2",
+        "D",
+        "E",
+        20
+      ]
+    ],
+    "gross_before": 400,
+    "gross_after": 70
+  },
+  "withdrawal_state_unchanged": true,
+  "execution": {
+    "http": 200,
+    "detail": "{'updateId': '12208a5e93297ecc68199b68ed874be2b2287c0d3e5ed0156c9c1d7882e019975383', 'completionOffset': 344}"
+  },
+  "holdings_before": {
+    "A": [
+      "t1",
+      "t3",
+      "t8"
+    ],
+    "B": [
+      "t1",
+      "t2",
+      "t5"
+    ],
+    "C": [
+      "t2",
+      "t3",
+      "t4",
+      "t7"
+    ],
+    "D": [
+      "t4",
+      "t5",
+      "t6"
+    ],
+    "E": [
+      "t6",
+      "t7",
+      "t8"
+    ]
+  },
+  "holdings_after": {
+    "A": [
+      "n1"
+    ],
+    "B": [
+      "n1"
+    ],
+    "C": [],
+    "D": [
+      "n2"
+    ],
+    "E": [
+      "n2"
+    ]
+  },
+  "holdings_as_planned": true,
+  "visibility": {
+    "A": {
+      "events": 19,
+      "pairs_seen": [
+        "AB",
+        "AC",
+        "AE"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "unclassified": []
+    },
+    "B": {
+      "events": 19,
+      "pairs_seen": [
+        "AB",
+        "BC",
+        "BD"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "unclassified": []
+    },
+    "C": {
+      "events": 28,
+      "pairs_seen": [
+        "AC",
+        "BC",
+        "CD",
+        "CE"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "unclassified": []
+    },
+    "D": {
+      "events": 19,
+      "pairs_seen": [
+        "BD",
+        "CD",
+        "DE"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "unclassified": []
+    },
+    "E": {
+      "events": 23,
+      "pairs_seen": [
+        "AE",
+        "CE",
+        "DE"
+      ],
+      "foreign_pairs": [],
+      "governance": [],
+      "unclassified": []
+    },
+    "execution party (node 1)": {
+      "events": 43,
+      "pairs_seen": [
+        "AB",
+        "AC",
+        "AE",
+        "BC",
+        "BD",
+        "CD",
+        "CE",
+        "DE"
+      ],
+      "foreign_pairs": [],
+      "governance": [
+        "CycleExecutionProposal",
+        "GovernanceConfirmation",
+        "GovernanceExecutionResult",
+        "GovernanceRules"
+      ],
+      "unclassified": []
+    }
+  },
+  "checks": {
+    "a firm withdrew after approval: nothing executes": {
+      "rejected": true,
+      "reason_matches": true,
+      "enforced_by": "consumed contract (the withdrawn permit)",
+      "detail": "{\"code\": \"CONTRACT_NOT_FOUND\", \"cause\": \"Contract could not be found with id 003090905b815cd1752684e4808c242a52ecb70c7441be6ae8de41ef822e891120ca1212207f4bdf78506c5668ebdc876c40422af44ae5fff3cb3fe0cc99100c9b74483602\", \"correlationId\": \"24b9c798-a021-4476-9a78-59031398ae67\", \"traceId\": \"2dc670478571c"
+    },
+    "one confirmation is not enough": {
+      "rejected": true,
+      "reason_matches": true,
+      "enforced_by": "Daml (GovernanceRules)",
+      "detail": "{\"code\": \"DAML_FAILURE\", \"cause\": \"Interpretation error: Error: User failure: UNHANDLED_EXCEPTION/DA.Exception.AssertionFailed:AssertionFailed (error category 9): The requirement 'Enough confirmations to execute action' was not met.\", \"correlationId\": \"047efd22-81ba-4593-a8fb-95c8b687efcd\", \"traceId"
+    }
+  }
+}

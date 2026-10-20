@@ -13,6 +13,7 @@ the limits.
 > · [what ran and what it does not show](#governed-execution-on-devnet-with-bitsafe)
 > · [recorded results](daml-governed/devnet/results-2026-10-06.json)
 > · [the same flow on LocalNet in one command](daml-governed/README.md#reproduce-on-a-clean-machine)
+> · added for the Grand Final (20 October): [five firms, eight trades, two net legs on LocalNet](daml-governed/README.md#five-firms-on-localnet-localnetmultifirmpy)
 
 **Hosted demo:** [demo.compressrail.com](https://demo.compressrail.com) (single participant, operator-executed cycle) · **Documentation:** [docs.compressrail.com](https://docs.compressrail.com) · **Hosted-demo video:** [youtu.be/8XmG6ss5XuY](https://youtu.be/8XmG6ss5XuY)
 
